@@ -8,6 +8,7 @@ import { prisma } from './utils/prismaClient';
 import authRouter from './routes/auth.routes';
 import companyRouter from './routes/company.routes';
 import medicineRouter from './routes/medicine.routes';
+import saleRouter from './routes/sale.routes';
 
 // ─── Validate Environment ────────────────────────────────────────────────────
 if (!process.env.DATABASE_URL && !process.env.DIRECT_URL) {
@@ -80,6 +81,8 @@ app.use('/api/auth', authRouter);
 app.use('/api/companies', companyRouter);
 
 app.use('/api/medicines', medicineRouter);
+
+app.use('/api/sales', saleRouter);
 
 // ─── Error Handling (must be LAST) ───────────────────────────────────────────
 app.use(notFoundHandler);
