@@ -1,0 +1,104 @@
+{
+  "Brand": {
+    "name": "سیستم مدیریت دواخانه",
+    "shortName": "سیستم دواخانه"
+  },
+  "Navigation": {
+    "dashboard": "داشبورد",
+    "medicines": "ادویه",
+    "companies": "شرکت‌ها",
+    "sales": "فروش",
+    "customers": "مشتریان",
+    "cash": "صندوق",
+    "expenses": "مصارف",
+    "salaries": "معاشات",
+    "reports": "گزارش‌ها",
+    "settings": "تنظیمات",
+    "users": "کاربران"
+  },
+  "Common": {
+    "add": "افزودن",
+    "edit": "ویرایش",
+    "delete": "حذف",
+    "save": "ذخیره",
+    "cancel": "لغو",
+    "search": "جستجو",
+    "loading": "در حال بارگذاری",
+    "error": "خطا",
+    "success": "موفق",
+    "print": "چاپ",
+    "logout": "خروج",
+    "language": "زبان",
+    "switchLanguage": "تغییر زبان"
+  },
+  "Medicine": {
+    "medicineName": "نام دوا",
+    "barcode": "بارکد",
+    "company": "شرکت",
+    "buyPrice": "قیمت خرید",
+    "sellPrice": "قیمت فروش",
+    "quantity": "مقدار",
+    "expiryDate": "تاریخ انقضا",
+    "minimumStock": "حداقل موجودی"
+  },
+  "Sales": {
+    "newPrescription": "نسخه جدید",
+    "totalAmount": "مبلغ مجموعی",
+    "paidAmount": "مبلغ پرداخت‌شده",
+    "remainingDebt": "بدهی باقی‌مانده",
+    "payInFull": "پرداخت کامل"
+  },
+  "Company": {
+    "companyName": "نام شرکت",
+    "totalPurchased": "مجموع خرید",
+    "totalPaid": "مجموع پرداخت",
+    "balance": "بیلانس",
+    "recordPurchase": "ثبت خرید",
+    "recordPayment": "ثبت پرداخت"
+  },
+  "Customer": {
+    "customerName": "نام مشتری",
+    "phone": "شماره تماس",
+    "totalDebt": "مجموع بدهی",
+    "recordPayment": "ثبت پرداخت"
+  },
+  "Cash": {
+    "openingBalance": "بیلانس افتتاحیه",
+    "closingBalance": "بیلانس اختتامیه",
+    "transferMoney": "انتقال پول",
+    "cashInHand": "نقد موجود"
+  },
+  "Expense": {
+    "category": "کتگوری",
+    "rent": "کرایه",
+    "electricity": "برق",
+    "salary": "معاش",
+    "transport": "ترانسپورت",
+    "other": "سایر"
+  },
+  "Reports": {
+    "dailyReport": "گزارش روزانه",
+    "weeklyReport": "گزارش هفتگی",
+    "monthlyReport": "گزارش ماهانه",
+    "yearlyReport": "گزارش سالانه",
+    "totalSales": "فروش مجموعی",
+    "totalProfit": "سود مجموعی",
+    "netProfit": "سود خالص"
+  },
+  "Alerts": {
+    "lowStockWarning": "هشدار کمبود موجودی",
+    "expiryWarning": "هشدار انقضا",
+    "medicinesExpiringSoon": "دواهای در حال انقضا"
+  },
+  "Languages": {
+    "label": "زبان",
+    "en": "English",
+    "fa": "دری",
+    "ps": "پښتو"
+  },
+  "Roles": {
+    "ADMIN": "مدیر سیستم",
+    "PHARMACIST": "داروساز",
+    "CASHIER": "صندوقدار"
+  }
+}

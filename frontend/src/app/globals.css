@@ -3,7 +3,7 @@
 /* ─── Custom Theme (replaces tailwind.config.ts "extend") ─────────────────── */
 @theme {
   /* Fonts — match the CSS variables set in layout.tsx */
-  --font-family-latin: var(--font-latin), sans-serif;
+  --font-family-latin: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-family-arabic: var(--font-arabic), serif;
 
   /* Brand colors */

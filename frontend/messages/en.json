@@ -1,0 +1,104 @@
+{
+  "Brand": {
+    "name": "Pharmacy Management System",
+    "shortName": "PMS"
+  },
+  "Navigation": {
+    "dashboard": "Dashboard",
+    "medicines": "Medicines",
+    "companies": "Companies",
+    "sales": "Sales",
+    "customers": "Customers",
+    "cash": "Cash",
+    "expenses": "Expenses",
+    "salaries": "Salaries",
+    "reports": "Reports",
+    "settings": "Settings",
+    "users": "Users"
+  },
+  "Common": {
+    "add": "Add",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "search": "Search",
+    "loading": "Loading",
+    "error": "Error",
+    "success": "Success",
+    "print": "Print",
+    "logout": "Logout",
+    "language": "Language",
+    "switchLanguage": "Switch language"
+  },
+  "Medicine": {
+    "medicineName": "Medicine Name",
+    "barcode": "Barcode",
+    "company": "Company",
+    "buyPrice": "Buy Price",
+    "sellPrice": "Sell Price",
+    "quantity": "Quantity",
+    "expiryDate": "Expiry Date",
+    "minimumStock": "Minimum Stock"
+  },
+  "Sales": {
+    "newPrescription": "New Prescription",
+    "totalAmount": "Total Amount",
+    "paidAmount": "Paid Amount",
+    "remainingDebt": "Remaining Debt",
+    "payInFull": "Pay in Full"
+  },
+  "Company": {
+    "companyName": "Company Name",
+    "totalPurchased": "Total Purchased",
+    "totalPaid": "Total Paid",
+    "balance": "Balance",
+    "recordPurchase": "Record Purchase",
+    "recordPayment": "Record Payment"
+  },
+  "Customer": {
+    "customerName": "Customer Name",
+    "phone": "Phone",
+    "totalDebt": "Total Debt",
+    "recordPayment": "Record Payment"
+  },
+  "Cash": {
+    "openingBalance": "Opening Balance",
+    "closingBalance": "Closing Balance",
+    "transferMoney": "Transfer Money",
+    "cashInHand": "Cash in Hand"
+  },
+  "Expense": {
+    "category": "Category",
+    "rent": "Rent",
+    "electricity": "Electricity",
+    "salary": "Salary",
+    "transport": "Transport",
+    "other": "Other"
+  },
+  "Reports": {
+    "dailyReport": "Daily Report",
+    "weeklyReport": "Weekly Report",
+    "monthlyReport": "Monthly Report",
+    "yearlyReport": "Yearly Report",
+    "totalSales": "Total Sales",
+    "totalProfit": "Total Profit",
+    "netProfit": "Net Profit"
+  },
+  "Alerts": {
+    "lowStockWarning": "Low Stock Warning",
+    "expiryWarning": "Expiry Warning",
+    "medicinesExpiringSoon": "Medicines expiring soon"
+  },
+  "Languages": {
+    "label": "Language",
+    "en": "English",
+    "fa": "Dari",
+    "ps": "Pashto"
+  },
+  "Roles": {
+    "ADMIN": "Admin",
+    "PHARMACIST": "Pharmacist",
+    "CASHIER": "Cashier"
+  }
+}

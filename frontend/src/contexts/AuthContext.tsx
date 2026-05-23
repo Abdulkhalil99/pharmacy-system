@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const stored = authStorage.getUser();
     const savedLang = authStorage.getLanguage();
     if (stored && authStorage.getToken()) {
-      setUser(stored);
+      setUser({ ...stored, language: savedLang });
     }
     setLanguageState(savedLang);
     setIsLoading(false);
@@ -40,6 +40,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setLanguage = useCallback((lang: string) => {
     authStorage.setLanguage(lang);
     setLanguageState(lang);
+    setUser((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const updatedUser = { ...current, language: lang };
+      authStorage.setUser(updatedUser);
+      return updatedUser;
+    });
   }, []);
 
   const login = useCallback(async (
