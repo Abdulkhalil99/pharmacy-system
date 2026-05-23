@@ -58,6 +58,20 @@ async function main() {
   });
   console.log('✅ Pharmacist user created');
 
+  const cashierPassword = await bcrypt.hash('cash123', 12);
+  await prisma.user.upsert({
+    where: { username: 'cashier1' },
+    update: {},
+    create: {
+      name: 'فرید صندوقدار',
+      username: 'cashier1',
+      password: cashierPassword,
+      role: Role.CASHIER,
+      language: Language.fa,
+    },
+  });
+  console.log('✅ Cashier user created');
+
   // ─── 2. Sample Companies ──────────────────────────────────────────────────
   await Promise.all([
     prisma.company.upsert({

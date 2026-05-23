@@ -1,5 +1,6 @@
 import { CustomerTransactionType, PrescriptionStatus, Prisma } from '@prisma/client';
 import { AppError } from '../middleware/error.middleware';
+import { cashRegisterService } from './cashregister.service';
 import { prisma } from '../utils/prismaClient';
 
 export interface SaleItemInput {
@@ -467,6 +468,8 @@ export const saleService = {
         include: saleInclude,
       });
 
+      await cashRegisterService.syncRegisterTotalsForDate(sale.date, tx);
+
       return buildReceipt(sale);
     });
   },
@@ -640,6 +643,8 @@ export const saleService = {
       }
 
       const updatedSale = await getSaleOrThrow(tx, prescriptionItem.prescription.sale.id);
+
+      await cashRegisterService.syncRegisterTotalsForDate(updatedSale.date, tx);
 
       return {
         returnedMedicine: {

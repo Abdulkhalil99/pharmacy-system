@@ -9,6 +9,7 @@ import authRouter from './routes/auth.routes';
 import companyRouter from './routes/company.routes';
 import medicineRouter from './routes/medicine.routes';
 import saleRouter from './routes/sale.routes';
+import cashRegisterRouter from './routes/cashregister.routes';
 
 // ─── Validate Environment ────────────────────────────────────────────────────
 if (!process.env.DATABASE_URL && !process.env.DIRECT_URL) {
@@ -83,6 +84,8 @@ app.use('/api/companies', companyRouter);
 app.use('/api/medicines', medicineRouter);
 
 app.use('/api/sales', saleRouter);
+
+app.use('/api/cash', cashRegisterRouter);
 
 // ─── Error Handling (must be LAST) ───────────────────────────────────────────
 app.use(notFoundHandler);

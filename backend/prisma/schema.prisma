@@ -275,11 +275,13 @@ model CashRegister {
   id              String   @id @default(cuid())
   date            DateTime @unique  // Only one register per calendar day
   openingBalance  Float             // Cash on hand at start of day
-  closingBalance  Float    @default(0)
+  closingBalance  Float?
   totalSales      Float    @default(0)
   totalExpenses   Float    @default(0)
   totalTransfers  Float    @default(0)
   note            String?
+  openedAt        DateTime @default(now())
+  closedAt        DateTime?
 
   @@map("cash_register")
 }
