@@ -1,0 +1,339 @@
+// ─── Generator & Datasource ────────────────────────────────────────────────
+// The generator block tells Prisma what to generate.
+// "prisma-client-js" generates the TypeScript client we use in our code.
+generator client {
+  provider = "prisma-client-js"
+}
+
+// The datasource block tells Prisma which database to connect to.
+// The URL comes from our .env file — never hardcode credentials here.
+datasource db {
+  provider  = "postgresql"
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENUMS
+// Enums are like a strict list of allowed values for a field.
+// PostgreSQL stores them efficiently and TypeScript knows the exact valid values.
+// ══════════════════════════════════════════════════════════════════════════════
+
+enum Role {
+  ADMIN       // Can do everything: users, reports, settings
+  PHARMACIST  // Can manage medicines, prescriptions, sales
+  CASHIER     // Can handle cash, transfers, expenses
+}
+
+enum Language {
+  fa  // Dari (default)
+  ps  // Pashto
+  en  // English
+}
+
+enum TransactionType {
+  PURCHASE  // We bought from the company (increases our debt to them)
+  PAYMENT   // We paid the company (decreases our debt to them)
+}
+
+enum CustomerTransactionType {
+  DEBT     // Customer owes us money (from a prescription)
+  PAYMENT  // Customer paid us back
+}
+
+enum PrescriptionStatus {
+  PAID     // Customer paid in full at time of sale
+  DEBT     // Customer paid nothing — full amount is debt
+  PARTIAL  // Customer paid some, rest is debt
+}
+
+enum ExpenseCategory {
+  RENT
+  ELECTRICITY
+  SALARY
+  TRANSPORT
+  OTHER
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GROUP 1: PEOPLE
+// ══════════════════════════════════════════════════════════════════════════════
+
+// The pharmacist, admin, cashier who logs into the system.
+// We store a hashed password — NEVER store plain text passwords.
+model User {
+  id        String   @id @default(cuid())  // cuid() generates collision-resistant IDs
+  name      String                          // Full display name
+  username  String   @unique               // Login username — must be unique
+  password  String                          // bcrypt hash of the password
+  role      Role     @default(PHARMACIST)
+  language  Language @default(fa)           // UI language preference
+  createdAt DateTime @default(now())
+
+  // Relations: one user can perform many of these actions
+  cashTransfers   CashTransfer[]
+  expenses        Expense[]
+  salaryPayments  SalaryPayment[]
+  returnedMeds    ReturnedMedicine[]
+
+  @@map("users")  // The actual PostgreSQL table name will be "users" (not "User")
+}
+
+// A customer/patient who buys prescriptions.
+// We track their debt automatically via CustomerTransaction.
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?  @unique  // Optional but unique if provided
+  totalDebt Float    @default(0)  // Running total — updated on each transaction
+  createdAt DateTime @default(now())
+
+  // Relations
+  prescriptions        Prescription[]
+  customerTransactions CustomerTransaction[]
+
+  @@map("customers")
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GROUP 2: INVENTORY & SUPPLIERS
+// ══════════════════════════════════════════════════════════════════════════════
+
+// A medicine/drug in the pharmacy's inventory.
+// When quantity drops below minQuantity, the UI should show a low-stock alert.
+model Medicine {
+  id          String   @id @default(cuid())
+  name        String
+  barcode     String?  @unique          // For barcode scanner support
+  company     String                    // Manufacturer name (just a string, not FK)
+  buyPrice    Float                     // What we paid per unit (in AFN)
+  sellPrice   Float                     // What we charge per unit (in AFN)
+  quantity    Int      @default(0)      // Current stock
+  minQuantity Int      @default(10)     // Alert threshold
+  expiryDate  DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt       // Prisma auto-updates this on every save
+
+  // Relations
+  prescriptionItems PrescriptionItem[]
+  returnedMeds      ReturnedMedicine[]
+
+  @@map("medicines")
+}
+
+// A supplier/distributor company we buy medicines from.
+// balance = totalPurchased - totalPaid (positive = we owe them money)
+model Company {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  phone          String?
+  address        String?
+  totalPurchased Float    @default(0)  // Running total of all purchases
+  totalPaid      Float    @default(0)  // Running total of all payments made
+  balance        Float    @default(0)  // Computed: totalPurchased - totalPaid
+  createdAt      DateTime @default(now())
+
+  // Relations
+  transactions CompanyTransaction[]
+
+  @@map("companies")
+}
+
+// Every time we buy from a company OR pay them, we record a transaction.
+// This gives us a full audit trail of the supplier relationship.
+model CompanyTransaction {
+  id         String          @id @default(cuid())
+  companyId  String
+  type       TransactionType                     // PURCHASE or PAYMENT
+  amount     Float
+  billNumber String?                             // Invoice/receipt number
+  note       String?
+  date       DateTime        @default(now())
+  createdAt  DateTime        @default(now())
+
+  // Relation: many transactions belong to one company
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@map("company_transactions")
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GROUP 3: SALES & PRESCRIPTIONS
+// This is the heart of the system. The flow is:
+// Prescription → PrescriptionItem(s) → Sale (auto-created on completion)
+// ══════════════════════════════════════════════════════════════════════════════
+
+// A prescription is a bill/invoice for a customer's medicine purchase.
+// It can be fully paid, partial, or fully on debt.
+//
+// IMPORTANT: debtAmount = totalAmount - paidAmount
+// This is stored (not computed) so we can query it efficiently.
+model Prescription {
+  id          String             @id @default(cuid())
+  customerId  String?            // Optional — walk-in customers have no account
+  totalAmount Float
+  paidAmount  Float              @default(0)
+  debtAmount  Float              @default(0)
+  status      PrescriptionStatus @default(PAID)
+  createdAt   DateTime           @default(now())
+
+  // Relations
+  customer             Customer?             @relation(fields: [customerId], references: [id])
+  items                PrescriptionItem[]
+  sale                 Sale?                 // Each prescription generates exactly one Sale
+  customerTransactions CustomerTransaction[]
+
+  @@map("prescriptions")
+}
+
+// Each line on a prescription: which medicine, how many, at what price.
+// We snapshot unitPrice at time of sale — if sellPrice changes later,
+// the historical prescription remains accurate.
+model PrescriptionItem {
+  id             String  @id @default(cuid())
+  prescriptionId String
+  medicineId     String
+  quantity       Int
+  unitPrice      Float   // Snapshotted from medicine.sellPrice at time of sale
+  total          Float   // quantity × unitPrice (stored for fast reporting)
+
+  // Relations
+  prescription Prescription @relation(fields: [prescriptionId], references: [id])
+  medicine     Medicine     @relation(fields: [medicineId], references: [id])
+  returnedMeds ReturnedMedicine[]
+
+  @@map("prescription_items")
+}
+
+// A Sale record is created automatically when a prescription is completed.
+// It stores profit so we can run profit reports without recalculating.
+// profit = Σ(quantity × (sellPrice - buyPrice)) for all items
+model Sale {
+  id             String   @id @default(cuid())
+  prescriptionId String   @unique  // One sale per prescription
+  totalAmount    Float
+  profit         Float             // Pre-computed for fast dashboard queries
+  date           DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  // Relation
+  prescription Prescription @relation(fields: [prescriptionId], references: [id])
+
+  @@map("sales")
+}
+
+// When a customer returns medicine (wrong drug, expired, etc.)
+// We need to: add stock back to Medicine, subtract from Sale profit,
+// and potentially update the CustomerTransaction.
+model ReturnedMedicine {
+  id                 String   @id @default(cuid())
+  prescriptionItemId String
+  medicineId         String
+  userId             String   // Who processed the return
+  quantity           Int
+  reason             String?
+  date               DateTime @default(now())
+  createdAt          DateTime @default(now())
+
+  // Relations
+  prescriptionItem PrescriptionItem @relation(fields: [prescriptionItemId], references: [id])
+  medicine         Medicine         @relation(fields: [medicineId], references: [id])
+  user             User             @relation(fields: [userId], references: [id])
+
+  @@map("returned_medicines")
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GROUP 4: CUSTOMER DEBT LEDGER
+// Every debt created and every payment received is a row here.
+// Customer.totalDebt is a cached sum — CustomerTransaction is the source of truth.
+// ══════════════════════════════════════════════════════════════════════════════
+
+model CustomerTransaction {
+  id             String                  @id @default(cuid())
+  customerId     String
+  prescriptionId String?                 // Links to the prescription that created the debt
+  type           CustomerTransactionType // DEBT or PAYMENT
+  amount         Float
+  note           String?
+  date           DateTime                @default(now())
+  createdAt      DateTime                @default(now())
+
+  // Relations
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  prescription Prescription? @relation(fields: [prescriptionId], references: [id])
+
+  @@map("customer_transactions")
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GROUP 5: FINANCE & CASH MANAGEMENT
+// ══════════════════════════════════════════════════════════════════════════════
+
+// One row per business day. Like a cash register tape.
+// Opened at start of day, closed at end.
+// Totals are updated throughout the day as transactions happen.
+model CashRegister {
+  id              String   @id @default(cuid())
+  date            DateTime @unique  // Only one register per calendar day
+  openingBalance  Float             // Cash on hand at start of day
+  closingBalance  Float    @default(0)
+  totalSales      Float    @default(0)
+  totalExpenses   Float    @default(0)
+  totalTransfers  Float    @default(0)
+  note            String?
+
+  @@map("cash_register")
+}
+
+// Moving money between accounts (e.g., from safe to bank, or bank to petty cash).
+// fromAccount and toAccount are free-text — flexible for any account naming.
+model CashTransfer {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Float
+  fromAccount String
+  toAccount   String
+  reason      String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  // Relation
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("cash_transfers")
+}
+
+// Any money leaving the pharmacy for operational costs.
+// Categorised for expense reports (monthly rent, utilities, etc.)
+model Expense {
+  id          String          @id @default(cuid())
+  userId      String          // Who recorded this expense
+  category    ExpenseCategory
+  amount      Float
+  description String?
+  date        DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+
+  // Relation
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("expenses")
+}
+
+// A record of paying an employee their monthly salary.
+// Separate from Expense so we can do payroll reports by employee/month/year.
+model SalaryPayment {
+  id           String   @id @default(cuid())
+  userId       String   // Who recorded this payment
+  employeeName String
+  amount       Float
+  month        Int      // 1–12
+  year         Int      // e.g. 2025
+  note         String?
+  date         DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  // Relation
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("salary_payments")
+}

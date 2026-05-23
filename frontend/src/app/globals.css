@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+/* ─── Custom Theme (replaces tailwind.config.ts "extend") ─────────────────── */
+@theme {
+  /* Fonts — match the CSS variables set in layout.tsx */
+  --font-family-latin: var(--font-latin), sans-serif;
+  --font-family-arabic: var(--font-arabic), serif;
+
+  /* Brand colors */
+  --color-primary-50:  #f0f9ff;
+  --color-primary-500: #0ea5e9;
+  --color-primary-600: #0284c7;
+  --color-primary-700: #0369a1;
+
+  /* Danger/success for pharmacy alerts */
+  --color-danger-500: #ef4444;
+  --color-success-500: #22c55e;
+  --color-warning-500: #f59e0b;
+}
+
+/* ─── RTL Support (replaces tailwindcss-rtl plugin) ───────────────────────── */
+/* Tailwind v4 has built-in logical properties — use ms-* me-* ps-* pe-*       */
+/* But we also add explicit RTL variants via a CSS variant                      */
+@variant rtl (&:where([dir="rtl"], [dir="rtl"] *));
+@variant ltr (&:where([dir="ltr"], [dir="ltr"] *));
+
+/* ─── Base Styles ──────────────────────────────────────────────────────────── */
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
+
+  /* Arabic/Dari/Pashto font when RTL */
+  [dir="rtl"] body {
+    font-family: var(--font-family-arabic);
+  }
+
+  /* Latin font when LTR */
+  [dir="ltr"] body {
+    font-family: var(--font-family-latin);
+  }
+}
