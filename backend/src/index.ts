@@ -10,6 +10,7 @@ import companyRouter from './routes/company.routes';
 import medicineRouter from './routes/medicine.routes';
 import saleRouter from './routes/sale.routes';
 import cashRegisterRouter from './routes/cashregister.routes';
+import customerRouter from './routes/customer.routes';
 
 // ─── Validate Environment ────────────────────────────────────────────────────
 if (!process.env.DATABASE_URL && !process.env.DIRECT_URL) {
@@ -80,6 +81,8 @@ app.get('/api/health', async (_req, res) => {
 app.use('/api/auth', authRouter);
 
 app.use('/api/companies', companyRouter);
+
+app.use('/api/customers', customerRouter);
 
 app.use('/api/medicines', medicineRouter);
 
