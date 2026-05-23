@@ -8,42 +8,36 @@ const translations = {
   fa: {
     dir: 'rtl',
     systemName: 'سیستم مدیریت دواخانه',
-    subtitle: 'به سیستم مدیریت دواخانه خوش آمدید',
     username: 'نام کاربری',
     password: 'رمز عبور',
     usernamePlaceholder: 'نام کاربری خود را وارد کنید',
     passwordPlaceholder: 'رمز عبور خود را وارد کنید',
     login: 'ورود به سیستم',
     loggingIn: 'در حال ورود...',
-    language: 'زبان',
     welcomeBack: 'خوش آمدید',
     loginToContinue: 'برای ادامه وارد شوید',
   },
   ps: {
     dir: 'rtl',
     systemName: 'د درملتون د مدیریت سیستم',
-    subtitle: 'د درملتون د مدیریت سیستم ته ښه راغلاست',
     username: 'د کارونکي نوم',
     password: 'پټنوم',
     usernamePlaceholder: 'خپل د کارونکي نوم دننه کړئ',
     passwordPlaceholder: 'خپل پټنوم دننه کړئ',
     login: 'سیستم ته ننوتل',
     loggingIn: 'ننوتل...',
-    language: 'ژبه',
     welcomeBack: 'ښه راغلاست',
     loginToContinue: 'دوام لپاره ننوځئ',
   },
   en: {
     dir: 'ltr',
     systemName: 'Pharmacy Management System',
-    subtitle: 'Welcome to Pharmacy Management System',
     username: 'Username',
     password: 'Password',
     usernamePlaceholder: 'Enter your username',
     passwordPlaceholder: 'Enter your password',
     login: 'Sign In',
     loggingIn: 'Signing in...',
-    language: 'Language',
     welcomeBack: 'Welcome Back',
     loginToContinue: 'Sign in to continue',
   },
@@ -52,23 +46,22 @@ const translations = {
 type Locale = 'fa' | 'ps' | 'en';
 
 export default function LoginPage() {
-  const router = useRouter();
+  const router       = useRouter();
   const searchParams = useSearchParams();
   const { login, isAuthenticated } = useAuth();
 
-  const [locale, setLocale] = useState<Locale>('fa');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [locale, setLocale]         = useState<Locale>('fa');
+  const [username, setUsername]     = useState('');
+  const [password, setPassword]     = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError]           = useState('');
+  const [isLoading, setIsLoading]   = useState(false);
 
   const t = translations[locale];
 
   useEffect(() => {
     if (isAuthenticated) {
-      const from = searchParams.get('from') ?? '/dashboard';
-      router.replace(from);
+      router.replace(searchParams.get('from') ?? '/dashboard');
     }
   }, [isAuthenticated, router, searchParams]);
 
@@ -77,15 +70,14 @@ export default function LoginPage() {
     setError('');
     setIsLoading(true);
 
-    const result = await login(username, password);
+    // Pass the locale the user selected — this is the key fix
+    const result = await login(username, password, locale);
 
     if (result.success) {
-      const from = searchParams.get('from') ?? '/dashboard';
-      router.replace(from);
+      router.replace(searchParams.get('from') ?? '/dashboard');
     } else {
       setError(result.message);
     }
-
     setIsLoading(false);
   };
 
@@ -94,19 +86,16 @@ export default function LoginPage() {
       className="min-h-screen bg-gradient-to-br from-teal-950 via-teal-900 to-cyan-900 flex items-center justify-center p-4"
       dir={t.dir}
     >
-      {/* Background pattern */}
+      {/* Dot grid background */}
       <div className="absolute inset-0 opacity-5 pointer-events-none"
-        style={{
-          backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
-          backgroundSize: '40px 40px',
-        }}
+        style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}
       />
 
-      {/* Language Selector — always top right regardless of RTL */}
+      {/* Language selector — always top-right regardless of RTL */}
       <div className="fixed top-4 right-4 z-50">
         <select
           value={locale}
-          onChange={(e) => setLocale(e.target.value as Locale)}
+          onChange={e => setLocale(e.target.value as Locale)}
           className="bg-white/10 backdrop-blur-sm text-white text-sm border border-white/20 rounded-lg px-3 py-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/30"
         >
           <option value="fa" className="text-gray-900">دری</option>
@@ -116,38 +105,27 @@ export default function LoginPage() {
       </div>
 
       <div className="w-full max-w-md relative">
-        {/* Card */}
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
 
           {/* Header */}
           <div className="bg-gradient-to-br from-teal-600 to-cyan-600 px-8 py-10 text-center relative">
-            {/* Decorative circles */}
             <div className="absolute top-0 left-0 w-32 h-32 bg-white/5 rounded-full -translate-x-16 -translate-y-16" />
             <div className="absolute bottom-0 right-0 w-40 h-40 bg-white/5 rounded-full translate-x-20 translate-y-20" />
-
-            {/* Pharmacy Icon */}
-            <div className="relative inline-flex items-center justify-center w-20 h-20 bg-white/15 backdrop-blur-sm rounded-2xl mb-4 mx-auto">
+            <div className="relative inline-flex items-center justify-center w-20 h-20 bg-white/15 rounded-2xl mb-4 mx-auto">
               <svg viewBox="0 0 24 24" className="w-10 h-10 text-white" fill="currentColor">
                 <path d="M10.5 2a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17ZM2 10.5a8.5 8.5 0 1 1 17 0 8.5 8.5 0 0 1-17 0Z"/>
                 <path d="M10.5 6.5a1 1 0 0 1 1 1v2h2a1 1 0 1 1 0 2h-2v2a1 1 0 1 1-2 0v-2h-2a1 1 0 1 1 0-2h2v-2a1 1 0 0 1 1-1Z"/>
-                <path d="M20.5 20.5a1 1 0 0 1-1.414 0l-3-3a1 1 0 1 1 1.414-1.414l3 3a1 1 0 0 1 0 1.414Z"/>
               </svg>
             </div>
-
-            <h1 className="text-white text-2xl font-bold leading-tight mb-1">
-              {t.systemName}
-            </h1>
+            <h1 className="text-white text-2xl font-bold leading-tight mb-1">{t.systemName}</h1>
             <p className="text-teal-100 text-sm opacity-90">{t.loginToContinue}</p>
           </div>
 
           {/* Form */}
           <div className="px-8 py-8">
-            <h2 className="text-gray-800 text-xl font-semibold mb-6 text-center">
-              {t.welcomeBack}
-            </h2>
+            <h2 className="text-gray-800 text-xl font-semibold mb-6 text-center">{t.welcomeBack}</h2>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Error message */}
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm flex items-center gap-2">
                   <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -159,9 +137,7 @@ export default function LoginPage() {
 
               {/* Username */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t.username}
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t.username}</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
                     <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -171,20 +147,18 @@ export default function LoginPage() {
                   <input
                     type="text"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    onChange={e => setUsername(e.target.value)}
                     placeholder={t.usernamePlaceholder}
                     required
                     autoComplete="username"
-                    className="w-full ps-10 pe-4 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
+                    className="w-full ps-10 pe-4 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all"
                   />
                 </div>
               </div>
 
               {/* Password */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t.password}
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t.password}</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none">
                     <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,11 +168,11 @@ export default function LoginPage() {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={e => setPassword(e.target.value)}
                     placeholder={t.passwordPlaceholder}
                     required
                     autoComplete="current-password"
-                    className="w-full ps-10 pe-12 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
+                    className="w-full ps-10 pe-12 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all"
                   />
                   <button
                     type="button"
@@ -219,11 +193,10 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-semibold py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-teal-200 mt-2"
+                className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-teal-200 mt-2"
               >
                 {isLoading ? (
                   <>
@@ -233,19 +206,14 @@ export default function LoginPage() {
                     </svg>
                     {t.loggingIn}
                   </>
-                ) : (
-                  t.login
-                )}
+                ) : t.login}
               </button>
             </form>
           </div>
 
-          {/* Footer */}
           <div className="px-8 pb-6 text-center">
             <p className="text-xs text-gray-400">
-              {locale === 'en'
-                ? 'Pharmacy Management System © 2025'
-                : 'سیستم مدیریت دواخانه © ۱۴۰۴'}
+              {locale === 'en' ? 'Pharmacy Management System © 2025' : 'سیستم مدیریت دواخانه © ۱۴۰۴'}
             </p>
           </div>
         </div>

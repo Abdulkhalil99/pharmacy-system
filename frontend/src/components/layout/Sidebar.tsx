@@ -110,7 +110,8 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const locale = (user?.language ?? 'fa') as 'fa' | 'ps' | 'en';
+  const { language } = useAuth();
+  const locale = language as 'fa' | 'ps' | 'en';
   const dir = locale === 'en' ? 'ltr' : 'rtl';
 
   const visibleItems = navItems.filter(

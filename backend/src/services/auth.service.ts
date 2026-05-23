@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import type { Secret, SignOptions } from 'jsonwebtoken';
 import { prisma } from '../utils/prismaClient';
 import { AppError } from '../middleware/error.middleware';
 import { Role } from '@prisma/client';
@@ -38,11 +39,17 @@ export const authService = {
     if (!isValid) throw INVALID_CREDENTIALS;
 
     // 4. Sign a JWT — the secret signs it so we can verify it wasn't tampered with
-    const secret = process.env.JWT_SECRET!;
+    const secret = process.env.JWT_SECRET as Secret;
+    const expiresIn = (process.env.JWT_EXPIRES_IN ?? '7d') as SignOptions['expiresIn'];
+    const payload: TokenPayload = {
+      userId: user.id,
+      username: user.username,
+      role: user.role,
+    };
     const token = jwt.sign(
-      { userId: user.id, username: user.username, role: user.role } as TokenPayload,
+      payload,
       secret,
-      { expiresIn: process.env.JWT_EXPIRES_IN ?? '7d' }
+      { expiresIn }
     );
 
     return {

@@ -1,9 +1,17 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api';
 
+export interface ApiMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
   data?: T;
+  meta?: ApiMeta;
   errors?: { field: string; message: string }[];
 }
 

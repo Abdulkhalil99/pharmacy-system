@@ -6,14 +6,18 @@ import { loggerMiddleware } from './middleware/logger.middleware';
 import { notFoundHandler, globalErrorHandler } from './middleware/error.middleware';
 import { prisma } from './utils/prismaClient';
 import authRouter from './routes/auth.routes';
+import companyRouter from './routes/company.routes';
+import medicineRouter from './routes/medicine.routes';
 
 // ─── Validate Environment ────────────────────────────────────────────────────
-const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET'];
-for (const key of requiredEnvVars) {
-  if (!process.env[key]) {
-    console.error(`❌ Missing required env var: ${key}`);
-    process.exit(1);
-  }
+if (!process.env.DATABASE_URL && !process.env.DIRECT_URL) {
+  console.error('❌ Missing required env var: DATABASE_URL or DIRECT_URL');
+  process.exit(1);
+}
+
+if (!process.env.JWT_SECRET) {
+  console.error('❌ Missing required env var: JWT_SECRET');
+  process.exit(1);
 }
 
 const app = express();
@@ -71,14 +75,11 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
-
 app.use('/api/auth', authRouter);
 
-// ─── API Routes (add here as you build them) ─────────────────────────────────
-// import authRouter from './routes/auth.routes';
-// import medicinesRouter from './routes/medicine.routes';
-// app.use('/api/auth', authRouter);
-// app.use('/api/medicines', medicinesRouter);
+app.use('/api/companies', companyRouter);
+
+app.use('/api/medicines', medicineRouter);
 
 // ─── Error Handling (must be LAST) ───────────────────────────────────────────
 app.use(notFoundHandler);
