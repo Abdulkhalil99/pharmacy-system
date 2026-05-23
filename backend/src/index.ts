@@ -11,6 +11,8 @@ import medicineRouter from './routes/medicine.routes';
 import saleRouter from './routes/sale.routes';
 import cashRegisterRouter from './routes/cashregister.routes';
 import customerRouter from './routes/customer.routes';
+import expenseRouter from './routes/expense.routes';
+import salaryRouter from './routes/salary.routes';
 
 // ─── Validate Environment ────────────────────────────────────────────────────
 if (!process.env.DATABASE_URL && !process.env.DIRECT_URL) {
@@ -83,6 +85,10 @@ app.use('/api/auth', authRouter);
 app.use('/api/companies', companyRouter);
 
 app.use('/api/customers', customerRouter);
+
+app.use('/api/expenses', expenseRouter);
+
+app.use('/api/salaries', salaryRouter);
 
 app.use('/api/medicines', medicineRouter);
 
