@@ -13,6 +13,7 @@ import cashRegisterRouter from './routes/cashregister.routes';
 import customerRouter from './routes/customer.routes';
 import expenseRouter from './routes/expense.routes';
 import salaryRouter from './routes/salary.routes';
+import reportRouter from './routes/report.routes';
 
 // ─── Validate Environment ────────────────────────────────────────────────────
 if (!process.env.DATABASE_URL && !process.env.DIRECT_URL) {
@@ -95,6 +96,8 @@ app.use('/api/medicines', medicineRouter);
 app.use('/api/sales', saleRouter);
 
 app.use('/api/cash', cashRegisterRouter);
+
+app.use('/api/reports', reportRouter);
 
 // ─── Error Handling (must be LAST) ───────────────────────────────────────────
 app.use(notFoundHandler);
