@@ -21,12 +21,16 @@ import {
   MonthlyReportData,
   PeriodTab,
   ProfitReportData,
+  ReportBreakdownRow,
   WeeklyReportData,
   YearlyReportData,
   createChartPoint,
   formatDate,
+  formatMonthLabel,
   formatMoney,
+  formatNumber,
   formatPercent,
+  getExpenseCategoryLabel,
   getDirection,
   getLocale,
   toDateInputValue,
@@ -82,6 +86,16 @@ const copy = {
     customerDebts: 'بدهی مشتریان',
     cashFlow: 'جریان نقدی',
     expenseSummary: 'خلاصه مصارف',
+    company: 'شرکت',
+    purchased: 'خرید',
+    paid: 'پرداخت',
+    balance: 'بیلانس',
+    customer: 'مشتری',
+    debt: 'بدهی',
+    lastActivity: 'آخرین فعالیت',
+    date: 'تاریخ',
+    entries: 'رکورد',
+    netCashFlow: 'خالص جریان نقدی',
     totalSales: 'فروش مجموعی',
     totalProfit: 'سود مجموعی',
     totalExpenses: 'مصارف مجموعی',
@@ -132,6 +146,16 @@ const copy = {
     customerDebts: 'د پیرودونکو پورونه',
     cashFlow: 'نغدي جریان',
     expenseSummary: 'د لګښتونو لنډیز',
+    company: 'شرکت',
+    purchased: 'پېرود',
+    paid: 'تادیه',
+    balance: 'بیلانس',
+    customer: 'پیرودونکی',
+    debt: 'پور',
+    lastActivity: 'وروستی فعالیت',
+    date: 'نېټه',
+    entries: 'ریکارډونه',
+    netCashFlow: 'خالص نغدي جریان',
     totalSales: 'ټول پلور',
     totalProfit: 'ټوله ګټه',
     totalExpenses: 'ټول لګښتونه',
@@ -182,6 +206,16 @@ const copy = {
     customerDebts: 'Customer Debts',
     cashFlow: 'Cash Flow',
     expenseSummary: 'Expense Summary',
+    company: 'Company',
+    purchased: 'Purchased',
+    paid: 'Paid',
+    balance: 'Balance',
+    customer: 'Customer',
+    debt: 'Debt',
+    lastActivity: 'Last Activity',
+    date: 'Date',
+    entries: 'Entries',
+    netCashFlow: 'Net Cash Flow',
     totalSales: 'Total Sales',
     totalProfit: 'Total Profit',
     totalExpenses: 'Total Expenses',
@@ -244,6 +278,37 @@ function getPresetRange(preset: 'today' | 'last7Days' | 'thisMonth' | 'thisYear'
     startDate: toDateInputValue(new Date(now.getFullYear(), 0, 1)),
     endDate: toDateInputValue(now),
   };
+}
+
+function getWeekLabel(weekNumber: number, locale: 'fa' | 'ps' | 'en') {
+  const number = formatNumber(weekNumber, locale);
+
+  if (locale === 'fa') {
+    return `هفته ${number}`;
+  }
+
+  if (locale === 'ps') {
+    return `اونۍ ${number}`;
+  }
+
+  return `Week ${number}`;
+}
+
+function getBreakdownLabel(
+  tab: Exclude<PeriodTab, 'daily'>,
+  row: ReportBreakdownRow,
+  index: number,
+  locale: 'fa' | 'ps' | 'en'
+) {
+  if (tab === 'weekly') {
+    return formatDate(row.start, locale);
+  }
+
+  if (tab === 'monthly') {
+    return getWeekLabel(index + 1, locale);
+  }
+
+  return formatMonthLabel(row.start, locale);
 }
 
 function OverviewMetric({
@@ -412,11 +477,23 @@ export default function ReportsPage() {
   }, []);
 
   useEffect(() => {
-    void fetchTimeReports(appliedRange);
+    const timeoutId = window.setTimeout(() => {
+      void fetchTimeReports(appliedRange);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [appliedRange, fetchTimeReports]);
 
   useEffect(() => {
-    void fetchStaticReports();
+    const timeoutId = window.setTimeout(() => {
+      void fetchStaticReports();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [fetchStaticReports]);
 
   const activeReport =
@@ -434,15 +511,30 @@ export default function ReportsPage() {
         ? [createChartPoint(tr.dailySummary, reports.daily.totalSales, reports.daily.totalProfit, reports.daily.totalExpenses)]
         : []
       : activeTab === 'weekly'
-        ? (reports.weekly?.dailyBreakdown ?? []).map((row) =>
-            createChartPoint(row.label, row.totalSales, row.totalProfit, row.totalExpenses)
+        ? (reports.weekly?.dailyBreakdown ?? []).map((row, index) =>
+            createChartPoint(
+              getBreakdownLabel('weekly', row, index, locale),
+              row.totalSales,
+              row.totalProfit,
+              row.totalExpenses
+            )
           )
         : activeTab === 'monthly'
-          ? (reports.monthly?.weeklyBreakdown ?? []).map((row) =>
-              createChartPoint(row.label, row.totalSales, row.totalProfit, row.totalExpenses)
+          ? (reports.monthly?.weeklyBreakdown ?? []).map((row, index) =>
+              createChartPoint(
+                getBreakdownLabel('monthly', row, index, locale),
+                row.totalSales,
+                row.totalProfit,
+                row.totalExpenses
+              )
             )
-          : (reports.yearly?.monthlyBreakdown ?? []).map((row) =>
-              createChartPoint(row.label, row.totalSales, row.totalProfit, row.totalExpenses)
+          : (reports.yearly?.monthlyBreakdown ?? []).map((row, index) =>
+              createChartPoint(
+                getBreakdownLabel('yearly', row, index, locale),
+                row.totalSales,
+                row.totalProfit,
+                row.totalExpenses
+              )
             );
 
   const handleApply = () => {
@@ -460,7 +552,7 @@ export default function ReportsPage() {
 
   const rangeLabel = activeReport
     ? `${formatDate(activeReport.range.start, locale)} - ${formatDate(activeReport.range.end, locale)}`
-    : `${draftRange.startDate} - ${draftRange.endDate}`;
+    : `${formatDate(draftRange.startDate, locale)} - ${formatDate(draftRange.endDate, locale)}`;
 
   const isLoading = isLoadingTimeReports || isLoadingStaticReports;
 
@@ -653,7 +745,7 @@ export default function ReportsPage() {
                 />
                 <OverviewMetric
                   label={tr.prescriptions}
-                  value={String(activeReport?.prescriptionsCount ?? 0)}
+                  value={formatNumber(activeReport?.prescriptionsCount ?? 0, locale)}
                   tone="bg-amber-50 text-amber-800 ring-amber-100"
                 />
                 <OverviewMetric
@@ -707,10 +799,10 @@ export default function ReportsPage() {
                   <table className="min-w-full text-sm">
                     <thead className="border-b border-slate-200 text-slate-500">
                       <tr>
-                        <th className="px-3 py-3 text-start font-semibold">Company</th>
-                        <th className="px-3 py-3 text-start font-semibold">Purchased</th>
-                        <th className="px-3 py-3 text-start font-semibold">Paid</th>
-                        <th className="px-3 py-3 text-start font-semibold">Balance</th>
+                        <th className="px-3 py-3 text-start font-semibold">{tr.company}</th>
+                        <th className="px-3 py-3 text-start font-semibold">{tr.purchased}</th>
+                        <th className="px-3 py-3 text-start font-semibold">{tr.paid}</th>
+                        <th className="px-3 py-3 text-start font-semibold">{tr.balance}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -742,10 +834,10 @@ export default function ReportsPage() {
                   <table className="min-w-full text-sm">
                     <thead className="border-b border-slate-200 text-slate-500">
                       <tr>
-                        <th className="px-3 py-3 text-start font-semibold">Customer</th>
-                        <th className="px-3 py-3 text-start font-semibold">Debt</th>
-                        <th className="px-3 py-3 text-start font-semibold">Prescriptions</th>
-                        <th className="px-3 py-3 text-start font-semibold">Last Activity</th>
+                        <th className="px-3 py-3 text-start font-semibold">{tr.customer}</th>
+                        <th className="px-3 py-3 text-start font-semibold">{tr.debt}</th>
+                        <th className="px-3 py-3 text-start font-semibold">{tr.prescriptions}</th>
+                        <th className="px-3 py-3 text-start font-semibold">{tr.lastActivity}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -755,7 +847,9 @@ export default function ReportsPage() {
                           <td className="px-3 py-3 font-semibold text-orange-700">
                             {formatMoney(customer.totalDebt, locale)}
                           </td>
-                          <td className="px-3 py-3 text-slate-700">{customer.totalPrescriptions}</td>
+                          <td className="px-3 py-3 text-slate-700">
+                            {formatNumber(customer.totalPrescriptions, locale)}
+                          </td>
                           <td className="px-3 py-3 text-slate-700">
                             {customer.lastActivityDate
                               ? formatDate(customer.lastActivityDate, locale)
@@ -788,7 +882,7 @@ export default function ReportsPage() {
                       tone="bg-rose-50 text-rose-800 ring-rose-100"
                     />
                     <OverviewMetric
-                      label={tr.netProfit}
+                      label={tr.netCashFlow}
                       value={formatMoney(reports.cashFlow.netCashFlow, locale)}
                       tone="bg-emerald-50 text-emerald-800 ring-emerald-100"
                     />
@@ -797,16 +891,18 @@ export default function ReportsPage() {
                     <table className="min-w-full text-sm">
                       <thead className="border-b border-slate-200 text-slate-500">
                         <tr>
-                          <th className="px-3 py-3 text-start font-semibold">Date</th>
+                          <th className="px-3 py-3 text-start font-semibold">{tr.date}</th>
                           <th className="px-3 py-3 text-start font-semibold">{tr.cashIn}</th>
                           <th className="px-3 py-3 text-start font-semibold">{tr.cashOut}</th>
-                          <th className="px-3 py-3 text-start font-semibold">{tr.netProfit}</th>
+                          <th className="px-3 py-3 text-start font-semibold">{tr.netCashFlow}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {reports.cashFlow.breakdown.map((row) => (
                           <tr key={row.label} className="border-b border-slate-100 last:border-b-0">
-                            <td className="px-3 py-3 font-medium text-slate-900">{row.label}</td>
+                            <td className="px-3 py-3 font-medium text-slate-900">
+                              {formatDate(row.start, locale)}
+                            </td>
                             <td className="px-3 py-3 text-sky-700">
                               {formatMoney(row.cashIn, locale)}
                             </td>
@@ -837,8 +933,8 @@ export default function ReportsPage() {
                       tone="bg-rose-50 text-rose-800 ring-rose-100"
                     />
                     <OverviewMetric
-                      label="Entries"
-                      value={String(reports.expenseReport.count)}
+                      label={tr.entries}
+                      value={formatNumber(reports.expenseReport.count, locale)}
                       tone="bg-slate-100 text-slate-800 ring-slate-200"
                     />
                   </div>
@@ -852,8 +948,12 @@ export default function ReportsPage() {
                           className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3"
                         >
                           <div>
-                            <p className="font-medium text-slate-900">{row.category}</p>
-                            <p className="text-xs text-slate-500">{row.count} entries</p>
+                            <p className="font-medium text-slate-900">
+                              {getExpenseCategoryLabel(row.category, locale)}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {formatNumber(row.count, locale)} {tr.entries}
+                            </p>
                           </div>
                           <p className="font-semibold text-rose-700">
                             {formatMoney(row.totalAmount, locale)}

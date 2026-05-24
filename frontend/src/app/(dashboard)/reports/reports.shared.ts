@@ -3,6 +3,7 @@
 export type Locale = 'fa' | 'ps' | 'en';
 export type Direction = 'rtl' | 'ltr';
 export type PeriodTab = 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type ExpenseCategory = 'RENT' | 'ELECTRICITY' | 'SALARY' | 'TRANSPORT' | 'OTHER';
 
 export interface ReportBreakdownRow {
   label: string;
@@ -203,14 +204,14 @@ export interface CashFlowReportData {
 }
 
 export interface ExpenseCategoryBreakdownRow {
-  category: string;
+  category: ExpenseCategory;
   totalAmount: number;
   count: number;
 }
 
 export interface ExpenseReportRow {
   id: string;
-  category: string;
+  category: ExpenseCategory;
   amount: number;
   description: string | null;
   date: string;
@@ -228,7 +229,7 @@ export interface ExpenseReportData {
     start: string;
     end: string;
   };
-  category: string | null;
+  category: ExpenseCategory | null;
   totalExpenses: number;
   count: number;
   byCategory: ExpenseCategoryBreakdownRow[];
@@ -264,6 +265,10 @@ export function formatMoney(value: number, locale: Locale): string {
   return `؋ ${formatted}`;
 }
 
+export function formatNumber(value: number, locale: Locale): string {
+  return value.toLocaleString(locale === 'en' ? 'en-US' : 'fa-AF');
+}
+
 export function formatPercent(value: number, locale: Locale): string {
   const formatted = value.toLocaleString(locale === 'en' ? 'en-US' : 'fa-AF', {
     minimumFractionDigits: 0,
@@ -279,6 +284,48 @@ export function formatDate(value: string, locale: Locale): string {
 
 export function formatDateTime(value: string, locale: Locale): string {
   return new Date(value).toLocaleString(locale === 'en' ? 'en-US' : 'fa-AF');
+}
+
+export function formatMonthLabel(
+  value: string,
+  locale: Locale,
+  month: 'short' | 'long' = 'short'
+): string {
+  return new Date(value).toLocaleString(locale === 'en' ? 'en-US' : 'fa-AF', {
+    month,
+  });
+}
+
+const expenseCategoryLabels: Record<ExpenseCategory, Record<Locale, string>> = {
+  RENT: {
+    fa: 'کرایه',
+    ps: 'کرایه',
+    en: 'Rent',
+  },
+  ELECTRICITY: {
+    fa: 'برق',
+    ps: 'برېښنا',
+    en: 'Electricity',
+  },
+  SALARY: {
+    fa: 'معاش',
+    ps: 'معاش',
+    en: 'Salary',
+  },
+  TRANSPORT: {
+    fa: 'ترانسپورت',
+    ps: 'ترانسپورت',
+    en: 'Transport',
+  },
+  OTHER: {
+    fa: 'دیگر',
+    ps: 'نور',
+    en: 'Other',
+  },
+};
+
+export function getExpenseCategoryLabel(category: ExpenseCategory, locale: Locale): string {
+  return expenseCategoryLabels[category][locale];
 }
 
 export function toDateInputValue(date: Date): string {
