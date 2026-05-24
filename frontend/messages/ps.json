@@ -1,0 +1,107 @@
+{
+  "Brand": {
+    "name": "د درملتون د مديريت سيستم",
+    "shortName": "د درملتون سيستم"
+  },
+  "Navigation": {
+    "dashboard": "ډشبورډ",
+    "medicines": "درمل",
+    "companies": "شرکتونه",
+    "sales": "پلور",
+    "customers": "پېرودونکي",
+    "cash": "کیسه",
+    "expenses": "لګښتونه",
+    "salaries": "معاشونه",
+    "reports": "راپورونه",
+    "settings": "امستنې",
+    "users": "کاروونکي",
+    "employees": "کارکوونکي",
+    "management": "مدیریت",
+    "myProfile": "زما پروفایل"
+  },
+  "Common": {
+    "add": "زیاتول",
+    "edit": "سمول",
+    "delete": "حذفول",
+    "save": "خوندي کول",
+    "cancel": "لغوه کول",
+    "search": "لټون",
+    "loading": "د بارولو په حال کې",
+    "error": "تېروتنه",
+    "success": "بریالی",
+    "print": "چاپ",
+    "logout": "وتل",
+    "language": "ژبه",
+    "switchLanguage": "د ژبې بدلول"
+  },
+  "Medicine": {
+    "medicineName": "د درملو نوم",
+    "barcode": "بارکوډ",
+    "company": "شرکت",
+    "buyPrice": "د پېر بیه",
+    "sellPrice": "د پلور بیه",
+    "quantity": "مقدار",
+    "expiryDate": "د پای نېټه",
+    "minimumStock": "لږ تر لږه ذخیره"
+  },
+  "Sales": {
+    "newPrescription": "نوې نسخه",
+    "totalAmount": "ټول مبلغ",
+    "paidAmount": "ورکړل شوې پیسې",
+    "remainingDebt": "پاتې پور",
+    "payInFull": "بشپړ تادیه"
+  },
+  "Company": {
+    "companyName": "د شرکت نوم",
+    "totalPurchased": "ټول پېرود",
+    "totalPaid": "ټولې ورکړې",
+    "balance": "بیلانس",
+    "recordPurchase": "د پېرود ثبت",
+    "recordPayment": "د تادیې ثبت"
+  },
+  "Customer": {
+    "customerName": "د پېرودونکي نوم",
+    "phone": "د تلیفون شمېره",
+    "totalDebt": "ټول پور",
+    "recordPayment": "د تادیې ثبت"
+  },
+  "Cash": {
+    "openingBalance": "پرانیستونکی بیلانس",
+    "closingBalance": "تړونکی بیلانس",
+    "transferMoney": "د پیسو لېږد",
+    "cashInHand": "په لاس کې نغدي"
+  },
+  "Expense": {
+    "category": "کټګوري",
+    "rent": "کرایه",
+    "electricity": "برېښنا",
+    "salary": "معاش",
+    "transport": "ترانسپورت",
+    "other": "نور"
+  },
+  "Reports": {
+    "dailyReport": "ورځنی راپور",
+    "weeklyReport": "اوونیز راپور",
+    "monthlyReport": "میاشتنی راپور",
+    "yearlyReport": "کلنی راپور",
+    "totalSales": "ټول پلور",
+    "totalProfit": "ټوله ګټه",
+    "netProfit": "خالصه ګټه"
+  },
+  "Alerts": {
+    "lowStockWarning": "د کمې ذخیرې خبرتیا",
+    "expiryWarning": "د پای نېټې خبرتیا",
+    "medicinesExpiringSoon": "ژر پای ته رسېدونکي درمل"
+  },
+  "Languages": {
+    "label": "ژبه",
+    "en": "English",
+    "fa": "دری",
+    "ps": "پښتو"
+  },
+  "Roles": {
+    "ADMIN": "سیستم مدیر",
+    "PHARMACIST": "درملساز",
+    "CASHIER": "کیسه وال"
+  }
+}
