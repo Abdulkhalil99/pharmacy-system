@@ -7,7 +7,13 @@ type Locale = 'fa' | 'ps' | 'en';
 
 interface SalaryFormProps {
   locale: Locale;
-  employeeNames: string[];
+  employees: Array<{
+    id: string;
+    fullName: string;
+    role: string;
+    isActive: boolean;
+  }>;
+  initialEmployeeId?: string;
   onSubmit: (data: SalaryPaymentFormData) => SalaryApiResponse<unknown>;
   onClose: () => void;
 }
@@ -16,12 +22,12 @@ const copy = {
   fa: {
     title: 'ثبت معاش',
     subtitle: 'پس از ثبت معاش، یک مصرف با دسته بندی معاش نیز به طور خودکار ساخته می شود.',
-    employeeName: 'نام کارمند',
+    employeeName: 'کارمند',
     amount: 'مبلغ',
     month: 'ماه',
     year: 'سال',
     note: 'یادداشت',
-    employeePlaceholder: 'نام کارمند را انتخاب یا تایپ کنید',
+    employeePlaceholder: 'کارمند را انتخاب کنید',
     cancel: 'انصراف',
     submit: 'ثبت معاش',
     submitting: 'در حال ثبت...',
@@ -29,12 +35,12 @@ const copy = {
   ps: {
     title: 'د معاش ثبت',
     subtitle: 'د معاش له ثبت وروسته د معاش په کټګورۍ کې یو لګښت هم په اوتومات ډول جوړېږي.',
-    employeeName: 'د کارکوونکي نوم',
+    employeeName: 'کارکوونکی',
     amount: 'مبلغ',
     month: 'میاشت',
     year: 'کال',
     note: 'یادښت',
-    employeePlaceholder: 'د کارکوونکي نوم وټاکئ یا ولیکئ',
+    employeePlaceholder: 'کارکوونکی وټاکئ',
     cancel: 'لغوه',
     submit: 'معاش ثبتول',
     submitting: 'ثبتېږي...',
@@ -42,12 +48,12 @@ const copy = {
   en: {
     title: 'Pay Salary',
     subtitle: 'Saving a salary payment also creates an expense entry in the Salary category.',
-    employeeName: 'Employee Name',
+    employeeName: 'Employee',
     amount: 'Amount',
     month: 'Month',
     year: 'Year',
     note: 'Note',
-    employeePlaceholder: 'Choose or type an employee name',
+    employeePlaceholder: 'Choose an employee',
     cancel: 'Cancel',
     submit: 'Record Salary',
     submitting: 'Submitting...',
@@ -56,13 +62,14 @@ const copy = {
 
 export function SalaryForm({
   locale,
-  employeeNames,
+  employees,
+  initialEmployeeId,
   onSubmit,
   onClose,
 }: SalaryFormProps) {
   const tr = copy[locale];
   const now = new Date();
-  const [employeeName, setEmployeeName] = useState('');
+  const [employeeId, setEmployeeId] = useState(initialEmployeeId ?? '');
   const [amount, setAmount] = useState('');
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -76,7 +83,7 @@ export function SalaryForm({
     setIsSubmitting(true);
 
     const response = await onSubmit({
-      employeeName: employeeName.trim(),
+      employeeId: employeeId || undefined,
       amount: Number(amount),
       month: Number(month),
       year: Number(year),
@@ -118,19 +125,19 @@ export function SalaryForm({
 
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">{tr.employeeName}</label>
-            <input
-              list="salary-employees"
-              value={employeeName}
-              onChange={(event) => setEmployeeName(event.target.value)}
-              placeholder={tr.employeePlaceholder}
+            <select
+              value={employeeId}
+              onChange={(event) => setEmployeeId(event.target.value)}
               className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
               required
-            />
-            <datalist id="salary-employees">
-              {employeeNames.map((name) => (
-                <option key={name} value={name} />
+            >
+              <option value="">{tr.employeePlaceholder}</option>
+              {employees.map((employee) => (
+                <option key={employee.id} value={employee.id}>
+                  {employee.fullName}
+                </option>
               ))}
-            </datalist>
+            </select>
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">

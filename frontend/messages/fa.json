@@ -14,7 +14,10 @@
     "salaries": "معاشات",
     "reports": "گزارش‌ها",
     "settings": "تنظیمات",
-    "users": "کاربران"
+    "users": "کاربران",
+    "employees": "کارمندان",
+    "management": "مدیریت",
+    "myProfile": "پروفایل من"
   },
   "Common": {
     "add": "افزودن",

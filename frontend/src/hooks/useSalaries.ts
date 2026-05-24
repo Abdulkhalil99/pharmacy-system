@@ -13,6 +13,7 @@ export interface SalaryUser {
 export interface SalaryPaymentRecord {
   id: string;
   userId: string;
+  employeeId: string | null;
   employeeName: string;
   amount: number;
   month: number;
@@ -21,6 +22,12 @@ export interface SalaryPaymentRecord {
   date: string;
   createdAt: string;
   user: SalaryUser;
+  employee: {
+    id: string;
+    fullName: string;
+    role: string;
+    isActive: boolean;
+  } | null;
 }
 
 export interface SalaryListResponse {
@@ -29,8 +36,15 @@ export interface SalaryListResponse {
     totalAmount: number;
     count: number;
   };
+  employees: Array<{
+    id: string;
+    fullName: string;
+    role: string;
+    isActive: boolean;
+  }>;
   employeeNames: string[];
   filters: {
+    employeeId: string | null;
     employeeName: string | null;
     month: number | null;
     year: number | null;
@@ -65,7 +79,8 @@ export interface SalaryEmployeeHistoryResponse {
 }
 
 export interface SalaryPaymentFormData {
-  employeeName: string;
+  employeeId?: string;
+  employeeName?: string;
   amount: number;
   month: number;
   year: number;
@@ -73,6 +88,7 @@ export interface SalaryPaymentFormData {
 }
 
 export interface SalaryFilters {
+  employeeId?: string;
   employeeName?: string;
   month?: number;
   year?: number;
@@ -88,6 +104,7 @@ export function useSalaries(filters?: SalaryFilters) {
   const [error, setError] = useState<string | null>(null);
 
   const employeeName = filters?.employeeName?.trim() ?? '';
+  const employeeId = filters?.employeeId;
   const month = filters?.month;
   const year = filters?.year;
 
@@ -100,6 +117,10 @@ export function useSalaries(filters?: SalaryFilters) {
 
       if (employeeName) {
         params.set('employeeName', employeeName);
+      }
+
+      if (employeeId) {
+        params.set('employeeId', employeeId);
       }
 
       if (month !== undefined) {
@@ -125,7 +146,7 @@ export function useSalaries(filters?: SalaryFilters) {
     } finally {
       setIsLoading(false);
     }
-  }, [employeeName, month, year]);
+  }, [employeeId, employeeName, month, year]);
 
   useEffect(() => {
     refresh();
@@ -134,6 +155,7 @@ export function useSalaries(filters?: SalaryFilters) {
   return {
     data,
     salaries: data?.salaries ?? [],
+    employees: data?.employees ?? [],
     employeeNames: data?.employeeNames ?? [],
     isLoading,
     error,

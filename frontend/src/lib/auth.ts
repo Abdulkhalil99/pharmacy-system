@@ -4,6 +4,12 @@ export interface AuthUser {
   username: string;
   role: 'ADMIN' | 'PHARMACIST' | 'CASHIER';
   language: string;
+  phone?: string | null;
+  email?: string | null;
+  isActive?: boolean;
+  lastLogin?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 const TOKEN_KEY    = 'pharmacy_token';

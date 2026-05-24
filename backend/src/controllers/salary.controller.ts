@@ -5,18 +5,23 @@ import { salaryService } from '../services/salary.service';
 import { sendSuccess } from '../utils/response.helper';
 
 const salaryFiltersSchema = z.object({
+  employeeId: z.string().optional(),
   employeeName: z.string().optional(),
   month: z.coerce.number().int().min(1).max(12).optional(),
   year: z.coerce.number().int().min(2000).max(2100).optional(),
 });
 
 const salaryPaymentSchema = z.object({
-  employeeName: z.string().min(1, 'Employee name is required'),
+  employeeId: z.string().optional(),
+  employeeName: z.string().optional(),
   amount: z.coerce.number().positive('Amount must be greater than 0'),
   month: z.coerce.number().int().min(1).max(12),
   year: z.coerce.number().int().min(2000).max(2100),
   note: z.string().optional(),
   date: z.string().optional(),
+}).refine((data) => Boolean(data.employeeId || data.employeeName?.trim()), {
+  message: 'Employee is required',
+  path: ['employeeId'],
 });
 
 const salarySummarySchema = z.object({

@@ -60,21 +60,51 @@ enum ExpenseCategory {
 // The pharmacist, admin, cashier who logs into the system.
 // We store a hashed password — NEVER store plain text passwords.
 model User {
-  id        String   @id @default(cuid())  // cuid() generates collision-resistant IDs
-  name      String                          // Full display name
-  username  String   @unique               // Login username — must be unique
-  password  String                          // bcrypt hash of the password
-  role      Role     @default(PHARMACIST)
-  language  Language @default(fa)           // UI language preference
-  createdAt DateTime @default(now())
+  id          String    @id @default(cuid())  // cuid() generates collision-resistant IDs
+  name        String                          // Full display name
+  username    String    @unique               // Login username — must be unique
+  password    String                          // bcrypt hash of the password
+  role        Role      @default(PHARMACIST)
+  phone       String?
+  email       String?   @unique
+  isActive    Boolean   @default(true)
+  language    Language  @default(fa)         // UI language preference
+  lastLogin   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
 
   // Relations: one user can perform many of these actions
+  createdBy       User?             @relation("UserCreatedUsers", fields: [createdById], references: [id], onDelete: SetNull)
+  createdUsers    User[]            @relation("UserCreatedUsers")
+  employee        Employee?
   cashTransfers   CashTransfer[]
   expenses        Expense[]
   salaryPayments  SalaryPayment[]
   returnedMeds    ReturnedMedicine[]
 
   @@map("users")  // The actual PostgreSQL table name will be "users" (not "User")
+}
+
+// Staff records for everyone working in the pharmacy.
+// Some employees have login accounts; others exist only as HR/payroll records.
+model Employee {
+  id             String          @id @default(cuid())
+  fullName       String
+  phone          String
+  email          String?         @unique
+  role           String
+  salary         Float
+  joinDate       DateTime
+  isActive       Boolean         @default(true)
+  userId         String?         @unique
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  user           User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  salaryPayments SalaryPayment[]
+
+  @@map("employees")
 }
 
 // A customer/patient who buys prescriptions.
@@ -326,6 +356,7 @@ model Expense {
 model SalaryPayment {
   id           String   @id @default(cuid())
   userId       String   // Who recorded this payment
+  employeeId   String?
   employeeName String
   amount       Float
   month        Int      // 1–12
@@ -335,7 +366,8 @@ model SalaryPayment {
   createdAt    DateTime @default(now())
 
   // Relation
-  user User @relation(fields: [userId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
 
   @@map("salary_payments")
 }

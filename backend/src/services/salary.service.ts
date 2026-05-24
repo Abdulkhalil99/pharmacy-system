@@ -4,13 +4,15 @@ import { cashRegisterService } from './cashregister.service';
 import { prisma } from '../utils/prismaClient';
 
 export interface SalaryFilters {
+  employeeId?: string;
   employeeName?: string;
   month?: number;
   year?: number;
 }
 
 export interface SalaryPaymentInput {
-  employeeName: string;
+  employeeId?: string;
+  employeeName?: string;
   amount: number;
   month: number;
   year: number;
@@ -34,10 +36,18 @@ const salaryInclude = Prisma.validator<Prisma.SalaryPaymentDefaultArgs>()({
         role: true,
       },
     },
+    employee: {
+      select: {
+        id: true,
+        fullName: true,
+        role: true,
+        isActive: true,
+      },
+    },
   },
 });
 
-type SalaryWithUser = Prisma.SalaryPaymentGetPayload<typeof salaryInclude>;
+type SalaryWithRelations = Prisma.SalaryPaymentGetPayload<typeof salaryInclude>;
 
 const normalizeOptionalString = (value?: string | null): string | null => {
   const trimmed = value?.trim();
@@ -82,6 +92,7 @@ const buildSalaryWhere = (filters: SalaryFilters): Prisma.SalaryPaymentWhereInpu
   const employeeName = normalizeOptionalString(filters.employeeName);
 
   return {
+    ...(filters.employeeId ? { employeeId: filters.employeeId } : {}),
     ...(employeeName
       ? {
           employeeName: {
@@ -95,9 +106,10 @@ const buildSalaryWhere = (filters: SalaryFilters): Prisma.SalaryPaymentWhereInpu
   };
 };
 
-const mapSalary = (salary: SalaryWithUser) => ({
+const mapSalary = (salary: SalaryWithRelations) => ({
   id: salary.id,
   userId: salary.userId,
+  employeeId: salary.employeeId,
   employeeName: salary.employeeName,
   amount: roundCurrency(salary.amount),
   month: salary.month,
@@ -106,6 +118,14 @@ const mapSalary = (salary: SalaryWithUser) => ({
   date: salary.date.toISOString(),
   createdAt: salary.createdAt.toISOString(),
   user: salary.user,
+  employee: salary.employee
+    ? {
+        id: salary.employee.id,
+        fullName: salary.employee.fullName,
+        role: salary.employee.role,
+        isActive: salary.employee.isActive,
+      }
+    : null,
 });
 
 const buildSalaryExpenseDescription = (employeeName: string, note?: string) => {
@@ -125,33 +145,75 @@ const validateSalaryPeriod = (month: number, year: number) => {
   }
 };
 
+const resolveEmployeeForPayment = async (
+  tx: Prisma.TransactionClient,
+  data: SalaryPaymentInput
+) => {
+  if (data.employeeId) {
+    const employee = await tx.employee.findUnique({
+      where: { id: data.employeeId },
+      select: {
+        id: true,
+        fullName: true,
+        isActive: true,
+      },
+    });
+
+    if (!employee) {
+      throw new AppError('Employee not found', 404);
+    }
+
+    return {
+      employeeId: employee.id,
+      employeeName: employee.fullName,
+    };
+  }
+
+  const employeeName = data.employeeName?.trim();
+
+  if (!employeeName) {
+    throw new AppError('Employee name is required', 400);
+  }
+
+  return {
+    employeeId: null,
+    employeeName,
+  };
+};
+
 export const salaryService = {
   async getAll(filters: SalaryFilters) {
     if (filters.month !== undefined && filters.year !== undefined) {
       validateSalaryPeriod(filters.month, filters.year);
     } else {
-      if (filters.month !== undefined && (!Number.isInteger(filters.month) || filters.month < 1 || filters.month > 12)) {
+      if (
+        filters.month !== undefined &&
+        (!Number.isInteger(filters.month) || filters.month < 1 || filters.month > 12)
+      ) {
         throw new AppError('Month must be between 1 and 12', 400);
       }
 
-      if (filters.year !== undefined && (!Number.isInteger(filters.year) || filters.year < 2000 || filters.year > 2100)) {
+      if (
+        filters.year !== undefined &&
+        (!Number.isInteger(filters.year) || filters.year < 2000 || filters.year > 2100)
+      ) {
         throw new AppError('Year must be between 2000 and 2100', 400);
       }
     }
 
-    const [salaries, allEmployees] = await Promise.all([
+    const [salaries, employees] = await Promise.all([
       prisma.salaryPayment.findMany({
         where: buildSalaryWhere(filters),
         include: salaryInclude.include,
         orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
       }),
-      prisma.salaryPayment.findMany({
-        distinct: ['employeeName'],
-        orderBy: {
-          employeeName: 'asc',
-        },
+      prisma.employee.findMany({
+        orderBy: [{ isActive: 'desc' }, { fullName: 'asc' }],
         select: {
-          employeeName: true,
+          id: true,
+          fullName: true,
+          role: true,
+          isActive: true,
         },
       }),
     ]);
@@ -162,8 +224,10 @@ export const salaryService = {
         totalAmount: roundCurrency(salaries.reduce((sum, salary) => sum + salary.amount, 0)),
         count: salaries.length,
       },
-      employeeNames: allEmployees.map((row) => row.employeeName),
+      employees,
+      employeeNames: employees.map((employee) => employee.fullName),
       filters: {
+        employeeId: filters.employeeId ?? null,
         employeeName: filters.employeeName ?? null,
         month: filters.month ?? null,
         year: filters.year ?? null,
@@ -172,12 +236,7 @@ export const salaryService = {
   },
 
   async recordPayment(data: SalaryPaymentInput) {
-    const employeeName = data.employeeName.trim();
     const amount = Number(data.amount);
-
-    if (!employeeName) {
-      throw new AppError('Employee name is required', 400);
-    }
 
     if (Number.isNaN(amount) || amount <= 0) {
       throw new AppError('Salary amount must be greater than 0', 400);
@@ -187,10 +246,13 @@ export const salaryService = {
     const paymentDate = parseDateOrNow(data.date);
 
     return prisma.$transaction(async (tx) => {
+      const employee = await resolveEmployeeForPayment(tx, data);
+
       const salary = await tx.salaryPayment.create({
         data: {
           userId: data.userId,
-          employeeName,
+          employeeId: employee.employeeId,
+          employeeName: employee.employeeName,
           amount: roundCurrency(amount),
           month: data.month,
           year: data.year,
@@ -205,7 +267,7 @@ export const salaryService = {
           userId: data.userId,
           category: ExpenseCategory.SALARY,
           amount: roundCurrency(amount),
-          description: buildSalaryExpenseDescription(employeeName, data.note),
+          description: buildSalaryExpenseDescription(employee.employeeName, data.note),
           date: paymentDate,
         },
       });
@@ -276,10 +338,11 @@ export const salaryService = {
     const byEmployeeMap = new Map<string, { totalAmount: number; count: number }>();
 
     for (const salary of salaries) {
-      const row = byEmployeeMap.get(salary.employeeName) ?? { totalAmount: 0, count: 0 };
+      const key = salary.employeeId ?? salary.employeeName;
+      const row = byEmployeeMap.get(key) ?? { totalAmount: 0, count: 0 };
       row.totalAmount += salary.amount;
       row.count += 1;
-      byEmployeeMap.set(salary.employeeName, row);
+      byEmployeeMap.set(key, row);
     }
 
     return {
@@ -291,13 +354,15 @@ export const salaryService = {
       },
       totalAmount: roundCurrency(salaries.reduce((sum, salary) => sum + salary.amount, 0)),
       count: salaries.length,
-      byEmployee: Array.from(byEmployeeMap.entries())
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([employeeName, row]) => ({
-          employeeName,
+      byEmployee: Array.from(byEmployeeMap.entries()).map(([key, row]) => {
+        const sample = salaries.find((salary) => (salary.employeeId ?? salary.employeeName) === key);
+        return {
+          employeeId: sample?.employeeId ?? null,
+          employeeName: sample?.employeeName ?? key,
           totalAmount: roundCurrency(row.totalAmount),
           count: row.count,
-        })),
+        };
+      }),
       recentPayments: salaries.slice(0, 10).map(mapSalary),
     };
   },

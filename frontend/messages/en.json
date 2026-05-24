@@ -14,7 +14,10 @@
     "salaries": "Salaries",
     "reports": "Reports",
     "settings": "Settings",
-    "users": "Users"
+    "users": "Users",
+    "employees": "Employees",
+    "management": "Management",
+    "myProfile": "My Profile"
   },
   "Common": {
     "add": "Add",

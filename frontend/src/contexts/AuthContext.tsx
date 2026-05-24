@@ -16,6 +16,7 @@ interface AuthContextValue {
   login: (username: string, password: string, chosenLanguage?: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   setLanguage: (lang: string) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -27,15 +28,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Read language from storage immediately — before user object loads
   const [language, setLanguageState] = useState<string>('fa');
 
+  const refreshUser = useCallback(async () => {
+    if (!authStorage.getToken()) {
+      return;
+    }
+
+    try {
+      const response = await api.get<AuthUser>('/auth/me');
+
+      if (response.success && response.data) {
+        const savedLang = authStorage.getLanguage();
+        const nextLanguage = response.data.language ?? savedLang ?? 'fa';
+        const nextUser = {
+          ...response.data,
+          language: nextLanguage,
+        };
+
+        authStorage.setUser(nextUser);
+        authStorage.setLanguage(nextLanguage);
+        setUser(nextUser);
+        setLanguageState(nextLanguage);
+        return;
+      }
+    } catch {
+      // If fetching the profile fails, keep the stored session as-is.
+    }
+  }, []);
+
   useEffect(() => {
     const stored = authStorage.getUser();
     const savedLang = authStorage.getLanguage();
     if (stored && authStorage.getToken()) {
       setUser({ ...stored, language: savedLang });
+      void refreshUser();
     }
     setLanguageState(savedLang);
     setIsLoading(false);
-  }, []);
+  }, [refreshUser]);
 
   const setLanguage = useCallback((lang: string) => {
     authStorage.setLanguage(lang);
@@ -92,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, isLoading, isAuthenticated: !!user,
-      language, login, logout, setLanguage,
+      language, login, logout, setLanguage, refreshUser,
     }}>
       {children}
     </AuthContext.Provider>

@@ -14,6 +14,8 @@ import customerRouter from './routes/customer.routes';
 import expenseRouter from './routes/expense.routes';
 import salaryRouter from './routes/salary.routes';
 import reportRouter from './routes/report.routes';
+import userRouter from './routes/user.routes';
+import employeeRouter from './routes/employee.routes';
 
 // ─── Validate Environment ────────────────────────────────────────────────────
 if (!process.env.DATABASE_URL && !process.env.DIRECT_URL) {
@@ -90,6 +92,10 @@ app.use('/api/customers', customerRouter);
 app.use('/api/expenses', expenseRouter);
 
 app.use('/api/salaries', salaryRouter);
+
+app.use('/api/users', userRouter);
+
+app.use('/api/employees', employeeRouter);
 
 app.use('/api/medicines', medicineRouter);
 

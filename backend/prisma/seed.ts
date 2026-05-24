@@ -32,45 +32,154 @@ async function main() {
 
   const admin = await prisma.user.upsert({
     where: { username: 'admin' },
-    update: {},  // Don't change anything if user already exists
+    update: {
+      name: 'Admin کاربر',
+      role: Role.ADMIN,
+      language: Language.fa,
+      isActive: true,
+      phone: '+93700000010',
+      email: 'admin@pharmacy.local',
+    },
     create: {
       name: 'Admin کاربر',
       username: 'admin',
       password: hashedPassword,
       role: Role.ADMIN,
       language: Language.fa,
+      isActive: true,
+      phone: '+93700000010',
+      email: 'admin@pharmacy.local',
     },
   });
   console.log(`✅ Admin user created: ${admin.username}`);
 
   // Also create a sample pharmacist
   const pharmacistPassword = await bcrypt.hash('pharma123', 12);
-  await prisma.user.upsert({
+  const pharmacist = await prisma.user.upsert({
     where: { username: 'pharmacist1' },
-    update: {},
+    update: {
+      name: 'احمد داروساز',
+      role: Role.PHARMACIST,
+      language: Language.fa,
+      isActive: true,
+      phone: '+93700000011',
+      email: 'pharmacist1@pharmacy.local',
+      createdById: admin.id,
+    },
     create: {
       name: 'احمد داروساز',
       username: 'pharmacist1',
       password: pharmacistPassword,
       role: Role.PHARMACIST,
       language: Language.fa,
+      isActive: true,
+      phone: '+93700000011',
+      email: 'pharmacist1@pharmacy.local',
+      createdById: admin.id,
     },
   });
   console.log('✅ Pharmacist user created');
 
   const cashierPassword = await bcrypt.hash('cash123', 12);
-  await prisma.user.upsert({
+  const cashier = await prisma.user.upsert({
     where: { username: 'cashier1' },
-    update: {},
+    update: {
+      name: 'فرید صندوقدار',
+      role: Role.CASHIER,
+      language: Language.fa,
+      isActive: true,
+      phone: '+93700000012',
+      email: 'cashier1@pharmacy.local',
+      createdById: admin.id,
+    },
     create: {
       name: 'فرید صندوقدار',
       username: 'cashier1',
       password: cashierPassword,
       role: Role.CASHIER,
       language: Language.fa,
+      isActive: true,
+      phone: '+93700000012',
+      email: 'cashier1@pharmacy.local',
+      createdById: admin.id,
     },
   });
   console.log('✅ Cashier user created');
+
+  // ─── 1b. Employees ───────────────────────────────────────────────────────
+  await prisma.employee.upsert({
+    where: {
+      userId: pharmacist.id,
+    },
+    update: {
+      fullName: pharmacist.name,
+      phone: pharmacist.phone ?? '+93700000011',
+      email: pharmacist.email,
+      role: 'Senior Pharmacist',
+      salary: 28000,
+      joinDate: new Date('2025-01-10'),
+      isActive: true,
+    },
+    create: {
+      fullName: pharmacist.name,
+      phone: pharmacist.phone ?? '+93700000011',
+      email: pharmacist.email,
+      role: 'Senior Pharmacist',
+      salary: 28000,
+      joinDate: new Date('2025-01-10'),
+      isActive: true,
+      userId: pharmacist.id,
+    },
+  });
+
+  await prisma.employee.upsert({
+    where: {
+      userId: cashier.id,
+    },
+    update: {
+      fullName: cashier.name,
+      phone: cashier.phone ?? '+93700000012',
+      email: cashier.email,
+      role: 'Cashier',
+      salary: 22000,
+      joinDate: new Date('2025-02-01'),
+      isActive: true,
+    },
+    create: {
+      fullName: cashier.name,
+      phone: cashier.phone ?? '+93700000012',
+      email: cashier.email,
+      role: 'Cashier',
+      salary: 22000,
+      joinDate: new Date('2025-02-01'),
+      isActive: true,
+      userId: cashier.id,
+    },
+  });
+
+  await prisma.employee.upsert({
+    where: {
+      email: 'cleaner@pharmacy.local',
+    },
+    update: {
+      fullName: 'ناصر نظافت',
+      phone: '+93700000013',
+      role: 'Cleaner',
+      salary: 16000,
+      joinDate: new Date('2025-03-15'),
+      isActive: true,
+    },
+    create: {
+      fullName: 'ناصر نظافت',
+      phone: '+93700000013',
+      email: 'cleaner@pharmacy.local',
+      role: 'Cleaner',
+      salary: 16000,
+      joinDate: new Date('2025-03-15'),
+      isActive: true,
+    },
+  });
+  console.log('✅ Sample employees created');
 
   // ─── 2. Sample Companies ──────────────────────────────────────────────────
   await Promise.all([

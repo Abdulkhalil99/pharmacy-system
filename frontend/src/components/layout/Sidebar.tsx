@@ -7,14 +7,17 @@ import { usePathname } from 'next/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
+import { getRoleBadgeClasses, getRoleLabel, type SystemUserRole } from '@/lib/user-meta';
 
-type Role = 'ADMIN' | 'PHARMACIST' | 'CASHIER';
+type Role = SystemUserRole;
+type SectionKey = 'main' | 'management';
 
 const navItems: Array<{
   href: string;
   labelKey: string;
   icon: ReactNode;
   roles: Role[];
+  section: SectionKey;
 }> = [
   {
     href: '/dashboard',
@@ -25,6 +28,7 @@ const navItems: Array<{
       </svg>
     ),
     roles: ['ADMIN', 'PHARMACIST', 'CASHIER'],
+    section: 'main',
   },
   {
     href: '/medicines',
@@ -35,6 +39,7 @@ const navItems: Array<{
       </svg>
     ),
     roles: ['ADMIN', 'PHARMACIST'],
+    section: 'main',
   },
   {
     href: '/sales',
@@ -45,6 +50,7 @@ const navItems: Array<{
       </svg>
     ),
     roles: ['ADMIN', 'PHARMACIST'],
+    section: 'main',
   },
   {
     href: '/customers',
@@ -55,6 +61,7 @@ const navItems: Array<{
       </svg>
     ),
     roles: ['ADMIN', 'PHARMACIST', 'CASHIER'],
+    section: 'main',
   },
   {
     href: '/companies',
@@ -65,6 +72,7 @@ const navItems: Array<{
       </svg>
     ),
     roles: ['ADMIN', 'PHARMACIST'],
+    section: 'main',
   },
   {
     href: '/cash',
@@ -75,6 +83,7 @@ const navItems: Array<{
       </svg>
     ),
     roles: ['ADMIN', 'CASHIER'],
+    section: 'main',
   },
   {
     href: '/expenses',
@@ -85,6 +94,7 @@ const navItems: Array<{
       </svg>
     ),
     roles: ['ADMIN', 'CASHIER'],
+    section: 'main',
   },
   {
     href: '/salaries',
@@ -95,6 +105,7 @@ const navItems: Array<{
       </svg>
     ),
     roles: ['ADMIN', 'CASHIER'],
+    section: 'main',
   },
   {
     href: '/reports',
@@ -105,6 +116,7 @@ const navItems: Array<{
       </svg>
     ),
     roles: ['ADMIN', 'PHARMACIST', 'CASHIER'],
+    section: 'main',
   },
   {
     href: '/users',
@@ -115,6 +127,18 @@ const navItems: Array<{
       </svg>
     ),
     roles: ['ADMIN'],
+    section: 'management',
+  },
+  {
+    href: '/employees',
+    labelKey: 'Navigation.employees',
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7zm8-4h1m-5 0h1m-5 0h1" />
+      </svg>
+    ),
+    roles: ['ADMIN', 'PHARMACIST'],
+    section: 'management',
   },
 ];
 
@@ -129,17 +153,43 @@ export function Sidebar() {
     (item) => user?.role && item.roles.includes(user.role)
   );
 
+  const mainItems = visibleItems.filter((item) => item.section === 'main');
+  const managementItems = visibleItems.filter((item) => item.section === 'management');
+
+  const renderNavItem = (item: (typeof navItems)[number]) => {
+    const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={() => setMobileOpen(false)}
+        className={`group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-all duration-150 ${
+          isActive
+            ? 'bg-white/15 text-white shadow-sm'
+            : 'text-teal-200 hover:bg-white/10 hover:text-white'
+        }`}
+      >
+        <span className={isActive ? 'text-white' : 'text-teal-300 group-hover:text-white'}>
+          {item.icon}
+        </span>
+        {!collapsed ? <span className="text-sm font-medium">{t(item.labelKey)}</span> : null}
+        {isActive && !collapsed ? (
+          <span className="ms-auto h-1.5 w-1.5 rounded-full bg-teal-300" />
+        ) : null}
+      </Link>
+    );
+  };
+
   const SidebarContent = () => (
     <div
-      className="flex h-full flex-col bg-gradient-to-b from-teal-900 to-teal-950"
+      className="flex h-full flex-col bg-[radial-gradient(circle_at_top,#134e4a,transparent_32%),linear-gradient(180deg,#0f3f39_0%,#062a26_100%)]"
       dir={dir}
     >
-      <div className="flex items-center justify-between border-b border-teal-700/50 px-4 py-5">
+      <div className="flex items-center justify-between border-b border-teal-700/40 px-4 py-5">
         {!collapsed ? (
           <div>
-            <p className="text-sm font-bold leading-tight text-white">
-              {t('Brand.name')}
-            </p>
+            <p className="text-sm font-bold leading-tight text-white">{t('Brand.name')}</p>
             <p className="mt-0.5 text-xs text-teal-300">v1.0</p>
           </div>
         ) : null}
@@ -153,65 +203,81 @@ export function Sidebar() {
         </button>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-4">
-        {visibleItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+      <nav className="flex-1 overflow-y-auto px-2 py-4">
+        <div className="space-y-1">{mainItems.map(renderNavItem)}</div>
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileOpen(false)}
-              className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-150 ${
-                isActive
-                  ? 'bg-white/15 text-white shadow-sm'
-                  : 'text-teal-200 hover:bg-white/10 hover:text-white'
-              }`}
-            >
-              <span className={isActive ? 'text-white' : 'text-teal-300 group-hover:text-white'}>
-                {item.icon}
-              </span>
-              {!collapsed ? <span className="text-sm font-medium">{t(item.labelKey)}</span> : null}
-              {isActive && !collapsed ? (
-                <span className="ms-auto h-1.5 w-1.5 rounded-full bg-teal-300" />
-              ) : null}
-            </Link>
-          );
-        })}
+        {managementItems.length > 0 ? (
+          <div className="mt-6">
+            {!collapsed ? (
+              <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.18em] text-teal-400/80">
+                {t('Navigation.management')}
+              </p>
+            ) : null}
+            <div className="space-y-1">{managementItems.map(renderNavItem)}</div>
+          </div>
+        ) : null}
       </nav>
 
-      <div className="border-t border-teal-700/50 p-3">
+      <div className="border-t border-teal-700/40 p-3">
         {!collapsed ? (
           <div className="mb-3">
             <LanguageSwitcher />
           </div>
         ) : null}
 
-        <div className={`flex items-center gap-3 px-2 py-2 ${collapsed ? 'justify-center' : ''}`}>
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-teal-600 text-sm font-semibold text-white">
-            {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
-          </div>
-          {!collapsed ? (
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-white">{user?.name}</p>
-              <p className="truncate text-xs text-teal-300">
-                {user?.role ? t(`Roles.${user.role}`) : ''}
-              </p>
+        <div className={`rounded-2xl border border-white/10 bg-white/10 p-3 ${collapsed ? 'px-2' : ''}`}>
+          <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-teal-500/90 text-sm font-semibold text-white">
+              {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
             </div>
-          ) : null}
-        </div>
 
-        <button
-          onClick={logout}
-          className={`mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-teal-200 transition-colors hover:bg-red-500/20 hover:text-red-300 ${
-            collapsed ? 'justify-center' : ''
-          }`}
-        >
-          <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          {!collapsed ? <span className="text-sm">{t('Common.logout')}</span> : null}
-        </button>
+            {!collapsed ? (
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-white">{user?.name}</p>
+                {user?.role ? (
+                  <span
+                    className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${getRoleBadgeClasses(user.role as SystemUserRole)}`}
+                  >
+                    {getRoleLabel(user.role as SystemUserRole, dir === 'ltr' ? 'en' : user?.language === 'ps' ? 'ps' : 'fa')}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+
+          {!collapsed ? (
+            <div className="mt-3 grid gap-2">
+              <Link
+                href="/settings"
+                className="flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm text-teal-100 transition-colors hover:bg-white/15 hover:text-white"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A4 4 0 006 18h12a4 4 0 00.879-.196m-13.758 0A4 4 0 014 14V8a4 4 0 014-4h8a4 4 0 014 4v6a4 4 0 01-1.121 3.804m-13.758 0L9 14m6 0 3.879 3.804M9 10h6" />
+                </svg>
+                <span>{t('Navigation.myProfile')}</span>
+              </Link>
+
+              <button
+                onClick={logout}
+                className="flex w-full items-center gap-2 rounded-xl bg-red-500/10 px-3 py-2 text-sm text-red-200 transition-colors hover:bg-red-500/20 hover:text-red-100"
+              >
+                <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>{t('Common.logout')}</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={logout}
+              className="mt-3 flex w-full justify-center rounded-xl bg-red-500/10 px-2 py-2 text-red-200 transition-colors hover:bg-red-500/20 hover:text-red-100"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -230,10 +296,7 @@ export function Sidebar() {
 
       {mobileOpen ? (
         <div className="fixed inset-0 z-50 bg-slate-950/60 lg:hidden" onClick={() => setMobileOpen(false)}>
-          <aside
-            className="h-full w-72 max-w-[85vw]"
-            onClick={(event) => event.stopPropagation()}
-          >
+          <aside className="h-full w-72 max-w-[85vw]" onClick={(event) => event.stopPropagation()}>
             <SidebarContent />
           </aside>
         </div>

@@ -17,7 +17,11 @@ export interface LoginResult {
     name: string;
     username: string;
     role: Role;
+    phone: string | null;
+    email: string | null;
+    isActive: boolean;
     language: string;
+    lastLogin: string | null;
   };
   token: string;
 }
@@ -33,6 +37,10 @@ export const authService = {
     const INVALID_CREDENTIALS = new AppError('Invalid username or password', 401);
 
     if (!user) throw INVALID_CREDENTIALS;
+
+    if (!user.isActive) {
+      throw new AppError('This account is inactive. Please contact an administrator.', 403);
+    }
 
     // 3. Compare submitted password against the stored bcrypt hash
     const isValid = await bcrypt.compare(password, user.password);
@@ -52,13 +60,37 @@ export const authService = {
       { expiresIn }
     );
 
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        lastLogin: new Date(),
+      },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        role: true,
+        phone: true,
+        email: true,
+        isActive: true,
+        language: true,
+        lastLogin: true,
+      },
+    });
+
     return {
       user: {
-        id: user.id,
-        name: user.name,
-        username: user.username,
-        role: user.role,
-        language: user.language,
+        id: updatedUser.id,
+        name: updatedUser.name,
+        username: updatedUser.username,
+        role: updatedUser.role,
+        phone: updatedUser.phone,
+        email: updatedUser.email,
+        isActive: updatedUser.isActive,
+        language: updatedUser.language,
+        lastLogin: updatedUser.lastLogin?.toISOString() ?? null,
       },
       token,
     };
@@ -73,8 +105,13 @@ export const authService = {
         name: true,
         username: true,
         role: true,
+        phone: true,
+        email: true,
+        isActive: true,
         language: true,
+        lastLogin: true,
         createdAt: true,
+        updatedAt: true,
       },
     });
 
@@ -86,6 +123,10 @@ export const authService = {
   async changePassword(userId: string, currentPassword: string, newPassword: string) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new AppError('User not found', 404);
+
+    if (!user.isActive) {
+      throw new AppError('Inactive users cannot change password', 403);
+    }
 
     const isValid = await bcrypt.compare(currentPassword, user.password);
     if (!isValid) throw new AppError('Current password is incorrect', 400);

@@ -14,7 +14,10 @@
     "salaries": "معاشونه",
     "reports": "راپورونه",
     "settings": "امستنې",
-    "users": "کاروونکي"
+    "users": "کاروونکي",
+    "employees": "کارکوونکي",
+    "management": "مدیریت",
+    "myProfile": "زما پروفایل"
   },
   "Common": {
     "add": "زیاتول",

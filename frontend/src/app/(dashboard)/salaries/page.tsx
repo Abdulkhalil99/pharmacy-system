@@ -1,6 +1,7 @@
 'use client';
 
 import { useDeferredValue, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { createSalaryPayment, useSalaries, useSalarySummary } from '@/hooks/useSalaries';
 import { SalaryForm } from './components/SalaryForm';
@@ -74,16 +75,19 @@ function getLocale(language?: string): Locale {
 
 export default function SalariesPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const locale = getLocale(user?.language);
   const tr = copy[locale];
   const dir = locale === 'en' ? 'ltr' : 'rtl';
   const now = new Date();
+  const selectedEmployeeId = searchParams.get('employeeId') ?? '';
 
   const [employeeName, setEmployeeName] = useState('');
   const deferredEmployeeName = useDeferredValue(employeeName);
   const [monthInput, setMonthInput] = useState('');
   const [yearInput, setYearInput] = useState('');
-  const { salaries, employeeNames, isLoading, error, refresh } = useSalaries({
+  const { salaries, employees, isLoading, error, refresh } = useSalaries({
+    employeeId: selectedEmployeeId || undefined,
     employeeName: deferredEmployeeName || undefined,
     month: monthInput ? Number(monthInput) : undefined,
     year: yearInput ? Number(yearInput) : undefined,
@@ -222,7 +226,8 @@ export default function SalariesPage() {
       {showForm && (
         <SalaryForm
           locale={locale}
-          employeeNames={employeeNames}
+          employees={employees}
+          initialEmployeeId={selectedEmployeeId || undefined}
           onClose={() => setShowForm(false)}
           onSubmit={async (formData) => {
             const response = await createSalaryPayment(formData);
