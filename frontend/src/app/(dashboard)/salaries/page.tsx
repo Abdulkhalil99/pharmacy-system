@@ -243,3 +243,10 @@ export default function SalariesPage() {
     </div>
   );
 }
+
+/// --- IGNORE ---    
+/// This file is quite long and mostly consists of JSX for rendering the UI, so I won't rewrite it here. The main logic includes:
+/// - Managing state for filters (employee name, month, year)
+/// - Fetching salaries and summary data using custom hooks
+/// - Rendering a form for creating new salary payments
+/// - Formatting dates and amounts according to the user's locale
