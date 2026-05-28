@@ -250,3 +250,20 @@ export default function SalariesPage() {
 /// - Fetching salaries and summary data using custom hooks
 /// - Rendering a form for creating new salary payments
 /// - Formatting dates and amounts according to the user's locale
+
+
+
+
+
+
+
+
+
+
+
+
+
+//////////////////////////////////
+
+
+// we will something here ?
