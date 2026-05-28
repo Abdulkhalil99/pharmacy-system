@@ -421,3 +421,12 @@ export default function DashboardPage() {
 }
 /// --- IGNORE ---
 /// The above code is for the main dashboard page, which includes various sections such as inventory health distribution, expiry timeline, and company distribution. It uses custom hooks to fetch data and renders different charts and summaries based on the data. The UI is responsive and adapts to different screen sizes, and it also supports multiple languages based on the user's preference.  
+
+
+
+
+
+
+
+
+/// Note: The code assumes the existence of certain hooks and context providers for authentication and data fetching, as well as a specific design system for styling. The actual implementation may require adjustments based on the overall architecture of the application.
