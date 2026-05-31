@@ -437,6 +437,13 @@ export default function SalesHistoryPage() {
         receipt={selectedReceipt}
         locale={locale}
         onClose={() => setReceiptOpen(false)}
+        onReturnRecorded={(nextReceipt) => {
+          setSelectedReceipt(nextReceipt);
+          void fetchSales({
+            startDate: startDate || undefined,
+            endDate: endDate || undefined,
+          });
+        }}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { api } from '@/lib/api';
 
 type Locale = 'fa' | 'ps' | 'en';
 
@@ -58,6 +59,17 @@ interface ReceiptModalProps {
   receipt: SaleReceipt | null;
   locale: Locale;
   onClose: () => void;
+  onReturnRecorded?: (receipt: SaleReceipt) => void;
+}
+
+interface ReturnMedicineResponse {
+  returnedMedicine: {
+    id: string;
+    amount: number;
+    refundedAmount: number;
+    reducedDebtAmount: number;
+  };
+  receipt: SaleReceipt;
 }
 
 const copy = {
@@ -87,6 +99,14 @@ const copy = {
     debtStatus: 'قرض',
     returnsTitle: 'اقلام برگشتی',
     noReturns: 'برگشتی ثبت نشده است.',
+    returnAction: 'ثبت برگشتی',
+    returnQty: 'تعداد برگشتی',
+    returnReason: 'دلیل',
+    returnReasonPlaceholder: 'اختیاری',
+    available: 'قابل برگشت',
+    submitReturn: 'ثبت',
+    returning: '...',
+    returnFailed: 'ثبت برگشتی موفق نشد.',
   },
   ps: {
     title: 'د پلور رسید',
@@ -114,6 +134,14 @@ const copy = {
     debtStatus: 'پور',
     returnsTitle: 'بېرته ورکړل شوي توکي',
     noReturns: 'هیڅ بېرته ستنونه نشته.',
+    returnAction: 'بېرته ستنول',
+    returnQty: 'شمېر',
+    returnReason: 'دلیل',
+    returnReasonPlaceholder: 'اختیاري',
+    available: 'د ستنولو وړ',
+    submitReturn: 'ثبت',
+    returning: '...',
+    returnFailed: 'بېرته ستنونه ثبت نه شوه.',
   },
   en: {
     title: 'Sales Receipt',
@@ -141,6 +169,14 @@ const copy = {
     debtStatus: 'On Debt',
     returnsTitle: 'Returned Medicines',
     noReturns: 'No returned items recorded.',
+    returnAction: 'Record Return',
+    returnQty: 'Return Qty',
+    returnReason: 'Reason',
+    returnReasonPlaceholder: 'Optional',
+    available: 'available',
+    submitReturn: 'Save',
+    returning: '...',
+    returnFailed: 'Failed to record return.',
   },
 };
 
@@ -170,9 +206,14 @@ function getStatusLabel(status: SaleReceipt['status'], locale: Locale) {
   return copy[locale].debtStatus;
 }
 
-export function ReceiptModal({ isOpen, receipt, locale, onClose }: ReceiptModalProps) {
+export function ReceiptModal({ isOpen, receipt, locale, onClose, onReturnRecorded }: ReceiptModalProps) {
   const tr = copy[locale];
   const dir = locale === 'en' ? 'ltr' : 'rtl';
+  const [returnItemId, setReturnItemId] = useState<string | null>(null);
+  const [returnQuantity, setReturnQuantity] = useState('1');
+  const [returnReason, setReturnReason] = useState('');
+  const [returnError, setReturnError] = useState('');
+  const [returningItemId, setReturningItemId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -195,6 +236,39 @@ export function ReceiptModal({ isOpen, receipt, locale, onClose }: ReceiptModalP
   if (!isOpen || !receipt) {
     return null;
   }
+
+  const startReturn = (item: SaleReceipt['items'][number]) => {
+    setReturnItemId(item.prescriptionItemId);
+    setReturnQuantity(item.availableQuantity > 0 ? '1' : '0');
+    setReturnReason('');
+    setReturnError('');
+  };
+
+  const submitReturn = async (item: SaleReceipt['items'][number]) => {
+    setReturningItemId(item.prescriptionItemId);
+    setReturnError('');
+
+    try {
+      const response = await api.post<ReturnMedicineResponse>('/sales/return', {
+        prescriptionItemId: item.prescriptionItemId,
+        quantity: Number(returnQuantity),
+        reason: returnReason.trim() || undefined,
+      });
+
+      if (response.success && response.data) {
+        onReturnRecorded?.(response.data.receipt);
+        setReturnItemId(null);
+        setReturnQuantity('1');
+        setReturnReason('');
+      } else {
+        setReturnError(response.message || tr.returnFailed);
+      }
+    } catch {
+      setReturnError(tr.returnFailed);
+    } finally {
+      setReturningItemId(null);
+    }
+  };
 
   return (
     <div className="receipt-print-shell fixed inset-0 z-50 overflow-y-auto bg-slate-950/50 px-4 py-8 backdrop-blur-sm">
@@ -297,6 +371,7 @@ export function ReceiptModal({ isOpen, receipt, locale, onClose }: ReceiptModalP
                     <th className="px-4 py-3 text-start font-semibold text-slate-500">{tr.qty}</th>
                     <th className="px-4 py-3 text-start font-semibold text-slate-500">{tr.unitPrice}</th>
                     <th className="px-4 py-3 text-start font-semibold text-slate-500">{tr.total}</th>
+                    <th className="px-4 py-3 text-start font-semibold text-slate-500 print:hidden">{tr.returnAction}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -306,9 +381,75 @@ export function ReceiptModal({ isOpen, receipt, locale, onClose }: ReceiptModalP
                         <p className="font-semibold text-slate-900">{item.medicineName}</p>
                         <p className="mt-1 text-xs text-slate-500">{item.company}</p>
                       </td>
-                      <td className="px-4 py-4 text-slate-700">{item.quantity}</td>
+                      <td className="px-4 py-4 text-slate-700">
+                        <div>{item.quantity}</div>
+                        {item.returnedQuantity > 0 ? (
+                          <div className="mt-1 text-xs font-semibold text-rose-600">
+                            -{item.returnedQuantity}
+                          </div>
+                        ) : null}
+                      </td>
                       <td className="px-4 py-4 text-slate-700">{formatMoney(item.unitPrice, locale)}</td>
                       <td className="px-4 py-4 font-semibold text-slate-900">{formatMoney(item.total, locale)}</td>
+                      <td className="px-4 py-4 print:hidden">
+                        {returnItemId === item.prescriptionItemId ? (
+                          <div className="min-w-64 space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                            <p className="text-xs font-semibold text-slate-500">
+                              {item.availableQuantity} {tr.available}
+                            </p>
+                            <div className="grid gap-2 sm:grid-cols-[90px_1fr]">
+                              <label className="block">
+                                <span className="mb-1 block text-xs font-semibold text-slate-600">{tr.returnQty}</span>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max={item.availableQuantity}
+                                  value={returnQuantity}
+                                  onChange={(event) => setReturnQuantity(event.target.value)}
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-100"
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="mb-1 block text-xs font-semibold text-slate-600">{tr.returnReason}</span>
+                                <input
+                                  type="text"
+                                  value={returnReason}
+                                  onChange={(event) => setReturnReason(event.target.value)}
+                                  placeholder={tr.returnReasonPlaceholder}
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-100"
+                                />
+                              </label>
+                            </div>
+                            {returnError ? <p className="text-xs text-rose-600">{returnError}</p> : null}
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => submitReturn(item)}
+                                disabled={returningItemId === item.prescriptionItemId}
+                                className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-emerald-700 disabled:bg-slate-400"
+                              >
+                                {returningItemId === item.prescriptionItemId ? tr.returning : tr.submitReturn}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setReturnItemId(null)}
+                                className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 transition-colors hover:bg-white"
+                              >
+                                {tr.close}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => startReturn(item)}
+                            disabled={item.availableQuantity <= 0}
+                            className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            {tr.returnAction}
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

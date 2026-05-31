@@ -42,6 +42,17 @@ const navItems: Array<{
     section: 'main',
   },
   {
+    href: '/alerts',
+    labelKey: 'Navigation.alerts',
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      </svg>
+    ),
+    roles: ['ADMIN', 'PHARMACIST', 'CASHIER'],
+    section: 'main',
+  },
+  {
     href: '/sales',
     labelKey: 'Navigation.sales',
     icon: (

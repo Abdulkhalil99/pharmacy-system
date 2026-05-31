@@ -16,6 +16,7 @@ import salaryRouter from './routes/salary.routes';
 import reportRouter from './routes/report.routes';
 import userRouter from './routes/user.routes';
 import employeeRouter from './routes/employee.routes';
+import alertsRouter from './routes/alerts.routes';
 
 // ─── Validate Environment ────────────────────────────────────────────────────
 if (!process.env.DATABASE_URL && !process.env.DIRECT_URL) {
@@ -104,6 +105,8 @@ app.use('/api/sales', saleRouter);
 app.use('/api/cash', cashRegisterRouter);
 
 app.use('/api/reports', reportRouter);
+
+app.use('/api/alerts', alertsRouter);
 
 // ─── Error Handling (must be LAST) ───────────────────────────────────────────
 app.use(notFoundHandler);

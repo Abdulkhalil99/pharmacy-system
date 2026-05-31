@@ -6,6 +6,7 @@
   "Navigation": {
     "dashboard": "Dashboard",
     "medicines": "Medicines",
+    "alerts": "Alerts",
     "companies": "Companies",
     "sales": "Sales",
     "customers": "Customers",
