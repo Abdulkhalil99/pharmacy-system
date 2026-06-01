@@ -1,5 +1,6 @@
 'use client';
 
+import { formatExpenseDescription } from '@/lib/expense-display';
 import {
   DailyCashReport,
   Locale,
@@ -288,7 +289,7 @@ export function DailyReport({ locale, report }: DailyReportProps) {
         rows={report.outflows.expenses.map((expense) => [
           formatDateTime(expense.date, locale),
           expense.category,
-          expense.description ?? '—',
+          formatExpenseDescription(expense.description, expense.category, locale) ?? '—',
           expense.user.name,
           formatMoney(expense.amount, locale),
         ])}

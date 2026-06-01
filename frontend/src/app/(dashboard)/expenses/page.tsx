@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
+import { formatExpenseDescription } from '@/lib/expense-display';
 import {
   createExpense,
   deleteExpense,
@@ -135,7 +136,7 @@ export default function ExpensesPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [category, setCategory] = useState<ExpenseCategory | ''>('');
-  const { data, expenses, isLoading, error, refresh } = useExpenses({
+  const { expenses, isLoading, error, refresh } = useExpenses({
     startDate: startDate || undefined,
     endDate: endDate || undefined,
     category: category || undefined,
@@ -150,14 +151,14 @@ export default function ExpensesPage() {
   const [editingExpense, setEditingExpense] = useState<ExpenseRecord | null>(null);
 
   const fetchSummaries = useCallback(async () => {
-    setSummaryError('');
-
     try {
       const [dailyResponse, monthlyResponse, yearlyResponse] = await Promise.all([
         api.get<ExpenseDailySummary>('/expenses/summary/daily'),
         api.get<ExpenseMonthlySummary>('/expenses/summary/monthly'),
         api.get<ExpenseYearlySummary>('/expenses/summary/yearly'),
       ]);
+
+      setSummaryError('');
 
       if (dailyResponse.success && dailyResponse.data) {
         setDailySummary(dailyResponse.data);
@@ -180,7 +181,11 @@ export default function ExpensesPage() {
   }, [tr.refreshFailed]);
 
   useEffect(() => {
-    void fetchSummaries();
+    const timeoutId = window.setTimeout(() => {
+      void fetchSummaries();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [fetchSummaries]);
 
   const formatMoney = (value: number) =>
@@ -370,7 +375,9 @@ export default function ExpensesPage() {
                         {getExpenseCategoryLabel(expense.category, locale)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{expense.description ?? '—'}</td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {formatExpenseDescription(expense.description, expense.category, locale) ?? '—'}
+                    </td>
                     <td className="whitespace-nowrap px-4 py-3 font-semibold text-red-600">
                       {formatMoney(expense.amount)}
                     </td>
