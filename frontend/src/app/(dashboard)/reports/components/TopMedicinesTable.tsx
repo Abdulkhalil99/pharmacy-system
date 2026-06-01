@@ -64,14 +64,14 @@ export function TopMedicinesTable({
   const noDataMessage = emptyMessage ?? tr.empty;
 
   return (
-    <section className="report-print-card rounded-[30px] border border-white/70 bg-white/90 p-5 shadow-[0_18px_60px_-35px_rgba(15,23,42,0.35)] backdrop-blur">
+    <section className="report-print-card rounded-[30px] p-5">
       <div className="mb-5">
-        <h3 className="text-xl font-bold text-slate-900">{reportTitle}</h3>
-        <p className="mt-1 text-sm text-slate-500">{reportSubtitle}</p>
+        <h3 className="text-xl font-bold text-slate-950">{reportTitle}</h3>
+        <p className="mt-1 text-sm leading-6 text-slate-500">{reportSubtitle}</p>
       </div>
 
       {medicines.length === 0 ? (
-        <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-sm text-slate-500">
+        <div className="app-chart-empty rounded-[24px] px-6 py-10 text-center text-sm text-slate-500">
           {noDataMessage}
         </div>
       ) : (

@@ -321,11 +321,11 @@ function OverviewMetric({
   tone: string;
 }) {
   return (
-    <article className={`rounded-[24px] p-4 ring-1 ${tone}`}>
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+    <article className={`rounded-[22px] bg-white/75 p-4 shadow-[0_16px_38px_-34px_rgba(15,23,42,0.5)] ring-1 ${tone}`}>
+      <p className="text-xs font-bold uppercase text-slate-500">
         {label}
       </p>
-      <p className="mt-3 text-xl font-bold text-slate-900">{value}</p>
+      <p className="mt-3 text-xl font-bold text-slate-950">{value}</p>
     </article>
   );
 }
@@ -338,8 +338,8 @@ function TableSection({
   children: ReactNode;
 }) {
   return (
-    <section className="report-print-card rounded-[30px] border border-white/70 bg-white/90 p-5 shadow-[0_18px_60px_-35px_rgba(15,23,42,0.35)] backdrop-blur">
-      <h3 className="text-xl font-bold text-slate-900">{title}</h3>
+    <section className="report-print-card rounded-[30px] p-5">
+      <h3 className="text-xl font-bold text-slate-950">{title}</h3>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -559,48 +559,48 @@ export default function ReportsPage() {
   return (
     <div
       dir={dir}
-      className="reports-print-shell space-y-6"
+      className="reports-print-shell app-page-shell space-y-6"
       style={{
         backgroundImage:
           'radial-gradient(circle at top left, rgba(20, 184, 166, 0.14), transparent 36%), radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 32%), linear-gradient(180deg, #f8fafc 0%, #eef8f6 100%)',
       }}
     >
-      <section className="print-hidden rounded-[34px] border border-white/70 bg-slate-950 px-6 py-6 text-white shadow-[0_24px_80px_-40px_rgba(15,23,42,0.8)]">
+      <section className="print-hidden overflow-hidden rounded-[30px] border border-teal-900/10 bg-[radial-gradient(circle_at_top_left,_rgba(45,212,191,0.28),_transparent_32%),radial-gradient(circle_at_88%_12%,_rgba(56,189,248,0.22),_transparent_28%),linear-gradient(135deg,_#064e3b_0%,_#0f766e_48%,_#075985_100%)] px-6 py-6 text-white shadow-[0_26px_80px_-42px_rgba(15,23,42,0.72)]">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-2xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-teal-300">
+            <p className="text-xs font-bold uppercase text-teal-100/90">
               {tr.title}
             </p>
             <h1 className="mt-2 text-3xl font-bold md:text-4xl">{tr.title}</h1>
-            <p className="mt-3 text-sm text-slate-300 md:text-base">{tr.subtitle}</p>
+            <p className="mt-3 text-sm leading-6 text-teal-50/90 md:text-base">{tr.subtitle}</p>
           </div>
 
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
               onClick={() => setDraftRange(getPresetRange('today'))}
-              className="rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-sm text-white transition-colors hover:bg-white/15"
+              className="rounded-full border border-white/15 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/20"
             >
               {tr.quickRanges.today}
             </button>
             <button
               type="button"
               onClick={() => setDraftRange(getPresetRange('last7Days'))}
-              className="rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-sm text-white transition-colors hover:bg-white/15"
+              className="rounded-full border border-white/15 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/20"
             >
               {tr.quickRanges.last7Days}
             </button>
             <button
               type="button"
               onClick={() => setDraftRange(getPresetRange('thisMonth'))}
-              className="rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-sm text-white transition-colors hover:bg-white/15"
+              className="rounded-full border border-white/15 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/20"
             >
               {tr.quickRanges.thisMonth}
             </button>
             <button
               type="button"
               onClick={() => setDraftRange(getPresetRange('thisYear'))}
-              className="rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-sm text-white transition-colors hover:bg-white/15"
+              className="rounded-full border border-white/15 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/20"
             >
               {tr.quickRanges.thisYear}
             </button>
@@ -641,7 +641,7 @@ export default function ReportsPage() {
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
                 {tr.period}
               </span>
-              <div className="rounded-[24px] border border-white/10 bg-white/8 px-4 py-3 text-sm text-slate-200">
+              <div className="rounded-[24px] border border-white/10 bg-white/10 px-4 py-3 text-sm text-slate-200">
                 {rangeLabel}
                 {activeTab === 'daily' ? (
                   <p className="mt-1 text-xs text-slate-400">{tr.dailyUsesEndDate}</p>
@@ -726,6 +726,7 @@ export default function ReportsPage() {
               labels={{
                 sales: tr.totalSales,
                 profit: tr.totalProfit,
+                expenses: tr.totalExpenses,
               }}
               emptyMessage={tr.noData}
             />

@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+:root {
+  --app-bg: #f5faf8;
+  --app-surface: rgba(255, 255, 255, 0.92);
+  --app-surface-strong: #ffffff;
+  --app-border: rgba(148, 163, 184, 0.24);
+  --app-border-strong: rgba(15, 118, 110, 0.18);
+  --app-shadow: 0 22px 70px -46px rgba(15, 23, 42, 0.44);
+  --app-shadow-soft: 0 18px 50px -42px rgba(15, 23, 42, 0.32);
+  --app-ring: 0 0 0 4px rgba(20, 184, 166, 0.12);
+}
+
 /* ─── Custom Theme (replaces tailwind.config.ts "extend") ─────────────────── */
 @theme {
   /* Fonts — match the CSS variables set in layout.tsx */
@@ -26,8 +37,63 @@
 
 /* ─── Base Styles ──────────────────────────────────────────────────────────── */
 @layer base {
+  html {
+    background: var(--app-bg);
+  }
+
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply text-slate-900 antialiased;
+    background:
+      radial-gradient(circle at 14% -10%, rgba(20, 184, 166, 0.14), transparent 34%),
+      radial-gradient(circle at 92% 2%, rgba(14, 165, 233, 0.11), transparent 30%),
+      linear-gradient(180deg, #f8fbfa 0%, var(--app-bg) 42%, #eef7f5 100%);
+  }
+
+  ::selection {
+    background: rgba(20, 184, 166, 0.22);
+    color: #0f172a;
+  }
+
+  * {
+    scrollbar-color: rgba(15, 118, 110, 0.42) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    height: 10px;
+    width: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(15, 118, 110, 0.28);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(15, 118, 110, 0.44);
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    letter-spacing: 0;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
   }
 
   /* Arabic/Dari/Pashto font when RTL */
@@ -38,6 +104,116 @@
   /* Latin font when LTR */
   [dir="ltr"] body {
     font-family: var(--font-family-latin);
+  }
+}
+
+@layer components {
+  .app-main-shell {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0) 34%),
+      radial-gradient(circle at 20% 0%, rgba(45, 212, 191, 0.13), transparent 30%),
+      radial-gradient(circle at 100% 12%, rgba(56, 189, 248, 0.10), transparent 28%);
+  }
+
+  .app-page-shell {
+    position: relative;
+  }
+
+  .app-card,
+  .report-print-card {
+    border: 1px solid var(--app-border);
+    background: var(--app-surface);
+    box-shadow: var(--app-shadow);
+    backdrop-filter: blur(18px);
+  }
+
+  .app-card-strong {
+    border: 1px solid var(--app-border-strong);
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(240, 253, 250, 0.86)),
+      var(--app-surface-strong);
+    box-shadow: var(--app-shadow);
+  }
+
+  .app-stat-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.92));
+    box-shadow: var(--app-shadow-soft);
+  }
+
+  .app-stat-card::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 3px;
+    background: linear-gradient(90deg, rgba(20, 184, 166, 0.86), rgba(14, 165, 233, 0.72));
+  }
+
+  .app-chart-card {
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.88)),
+      var(--app-surface-strong);
+    box-shadow: 0 24px 80px -48px rgba(15, 23, 42, 0.42);
+    backdrop-filter: blur(18px);
+  }
+
+  .app-chart-empty {
+    border: 1px dashed rgba(100, 116, 139, 0.28);
+    background:
+      linear-gradient(135deg, rgba(248, 250, 252, 0.94), rgba(240, 253, 250, 0.72));
+  }
+
+  .report-print-card {
+    border-color: var(--app-border) !important;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.9)) !important;
+    box-shadow: var(--app-shadow) !important;
+  }
+
+  .report-print-table table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .report-print-table tbody tr {
+    transition: background-color 160ms ease, transform 160ms ease;
+  }
+
+  .report-print-table tbody tr:hover {
+    background: rgba(240, 253, 250, 0.72);
+  }
+
+  main :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea)[class*="border"] {
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+  }
+
+  main :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea)[class*="border"]:focus {
+    box-shadow: var(--app-ring);
+  }
+
+  main :where(section, article)[class*="bg-white"][class*="shadow-sm"],
+  main :where(div)[class*="bg-white"][class*="border"][class*="shadow-sm"] {
+    border-color: var(--app-border);
+    box-shadow: var(--app-shadow-soft);
+  }
+
+  .recharts-wrapper text {
+    font-family: inherit;
+    letter-spacing: 0;
+  }
+
+  .recharts-cartesian-grid line {
+    stroke: rgba(148, 163, 184, 0.24);
+  }
+
+  .recharts-tooltip-cursor {
+    fill: rgba(20, 184, 166, 0.08);
+    stroke: rgba(15, 118, 110, 0.18);
   }
 }
 

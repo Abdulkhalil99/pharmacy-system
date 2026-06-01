@@ -96,9 +96,9 @@ function InventoryTable({
   const tr = copy[locale];
 
   return (
-    <section className="rounded-[24px] border border-slate-200 bg-white/80">
+    <section className="rounded-[24px] border border-slate-200/80 bg-white/90 shadow-[0_14px_34px_-32px_rgba(15,23,42,0.45)]">
       <div className="border-b border-slate-100 px-4 py-4">
-        <h4 className="text-lg font-semibold text-slate-900">{title}</h4>
+        <h4 className="text-lg font-bold text-slate-950">{title}</h4>
       </div>
 
       {rows.length === 0 ? (
@@ -150,8 +150,8 @@ export function InventoryReport({
 
   if (!inventory) {
     return (
-      <section className="report-print-card rounded-[30px] border border-white/70 bg-white/90 p-6 shadow-[0_18px_60px_-35px_rgba(15,23,42,0.35)] backdrop-blur">
-        <h3 className="text-xl font-bold text-slate-900">{reportTitle}</h3>
+      <section className="report-print-card rounded-[30px] p-6">
+        <h3 className="text-xl font-bold text-slate-950">{reportTitle}</h3>
         <p className="mt-2 text-sm text-slate-500">{tr.unavailable}</p>
       </section>
     );
@@ -181,19 +181,19 @@ export function InventoryReport({
   ];
 
   return (
-    <section className="report-print-card rounded-[30px] border border-white/70 bg-white/90 p-5 shadow-[0_18px_60px_-35px_rgba(15,23,42,0.35)] backdrop-blur">
+    <section className="report-print-card rounded-[30px] p-5">
       <div className="mb-5">
-        <h3 className="text-xl font-bold text-slate-900">{reportTitle}</h3>
-        <p className="mt-1 text-sm text-slate-500">{reportSubtitle}</p>
+        <h3 className="text-xl font-bold text-slate-950">{reportTitle}</h3>
+        <p className="mt-1 text-sm leading-6 text-slate-500">{reportSubtitle}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summaryCards.map((card) => (
-          <article key={card.label} className={`rounded-[24px] p-4 ring-1 ${card.tone}`}>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+          <article key={card.label} className={`rounded-[22px] p-4 shadow-[0_16px_38px_-34px_rgba(15,23,42,0.45)] ring-1 ${card.tone}`}>
+            <p className="text-xs font-bold uppercase text-slate-500">
               {card.label}
             </p>
-            <p className="mt-4 text-2xl font-bold text-slate-900">{card.value}</p>
+            <p className="mt-4 text-2xl font-bold text-slate-950">{card.value}</p>
           </article>
         ))}
       </div>

@@ -330,7 +330,7 @@ export default function CashDashboardPage() {
               {tr.today} • {todayStatus ? formatDate(todayStatus.date, locale) : ''}
             </p>
             <h1 className="mt-2 text-3xl font-bold">{tr.title}</h1>
-            <p className="mt-2 max-w-3xl text-sm text-cyan-50/85">{tr.subtitle}</p>
+            <p className="mt-2 max-w-3xl text-sm text-cyan-50/90">{tr.subtitle}</p>
           </div>
 
           <div className="flex flex-wrap gap-3">
