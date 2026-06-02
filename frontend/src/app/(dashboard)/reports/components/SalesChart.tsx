@@ -144,7 +144,9 @@ export function SalesChart({
               />
               <Tooltip
                 cursor={{ stroke: '#0f766e', strokeOpacity: 0.18, strokeWidth: 1 }}
-                content={(props) => <SalesTooltip {...props} locale={locale} />}
+                content={(props: TooltipContentProps<TooltipValueType, string>) => (
+                  <SalesTooltip {...props} locale={locale} />
+                )}
               />
               <Bar
                 dataKey="expenses"

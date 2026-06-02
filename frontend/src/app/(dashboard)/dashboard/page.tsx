@@ -1,7 +1,5 @@
 'use client';
 
-import { useAuth } from '@/contexts/AuthContext';
-import { useMedicines } from '@/hooks/useMedicines';
 import {
   Bar,
   BarChart,
@@ -14,14 +12,15 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { TooltipContentProps, TooltipValueType } from 'recharts';
+import { useAuth } from '@/contexts/AuthContext';
+import { useMedicines } from '@/hooks/useMedicines';
 
 type Locale = 'fa' | 'ps' | 'en';
 
 const copy = {
   fa: {
     title: 'داشبورد',
-    subtitle: 'نمای تصویری از وضعیت موجودی، انقضا و توزیع شرکت ها',
+    subtitle: 'نمای دقیق از وضعیت موجودی، انقضا و توزیع شرکت ها',
     welcome: 'خوش آمدید',
     totalMedicines: 'کل دواها',
     lowStock: 'کمبود موجودی',
@@ -29,9 +28,9 @@ const copy = {
     expired: 'منقضی شده',
     normalStock: 'وضعیت عادی',
     healthDistribution: 'ترکیب وضعیت موجودی',
-    healthDescription: 'این نمودار هر دوا را فقط در یک وضعیت اصلی نمایش می دهد.',
-    expiryTimeline: 'نمودار بازه انقضا',
-    expiryDescription: 'پخش دواها بر اساس فاصله تا تاریخ انقضا',
+    healthDescription: 'هر دوا فقط در وضعیت اصلی خودش شمرده می شود.',
+    expiryTimeline: 'بازه های انقضا',
+    expiryDescription: 'شمار دواها بر اساس فاصله تا تاریخ انقضا',
     companyDistribution: 'موجودی بر اساس شرکت',
     companyDescription: 'شرکت هایی که بیشترین موجودی فعلی را دارند',
     next30Days: 'تا ۳۰ روز',
@@ -47,7 +46,7 @@ const copy = {
   },
   ps: {
     title: 'ډشبورډ',
-    subtitle: 'د ذخیرې، پای نیټې او شرکتونو وېش انځوریزه کتنه',
+    subtitle: 'د ذخیرې، پای نیټې او شرکتونو دقیق انځور',
     welcome: 'ښه راغلاست',
     totalMedicines: 'ټول درمل',
     lowStock: 'لږ ذخیره',
@@ -55,9 +54,9 @@ const copy = {
     expired: 'پای شوي',
     normalStock: 'عادي حالت',
     healthDistribution: 'د ذخیرې د حالت ترکیب',
-    healthDescription: 'په دې ګراف کې هر درمل یوازې په یوه اصلي حالت کې شمیرل کیږي.',
-    expiryTimeline: 'د پای نیټې ګراف',
-    expiryDescription: 'درمل د پای نیټې واټن له مخې وېشل شوي',
+    healthDescription: 'هر درمل یوازې په خپل اصلي حالت کې شمېرل کېږي.',
+    expiryTimeline: 'د پای نېټې وختونه',
+    expiryDescription: 'درمل د پای نېټې د نږدېوالي له مخې شمېرل شوي',
     companyDistribution: 'ذخیره د شرکت له مخې',
     companyDescription: 'هغه شرکتونه چې تر ټولو زیاته موجودي لري',
     next30Days: 'تر ۳۰ ورځو',
@@ -73,7 +72,7 @@ const copy = {
   },
   en: {
     title: 'Dashboard',
-    subtitle: 'Visual view of stock health, expiry windows, and company distribution',
+    subtitle: 'Accurate view of stock health, expiry windows, and company distribution',
     welcome: 'Welcome back',
     totalMedicines: 'Total Medicines',
     lowStock: 'Low Stock',
@@ -81,9 +80,9 @@ const copy = {
     expired: 'Expired',
     normalStock: 'Healthy Stock',
     healthDistribution: 'Inventory Health Mix',
-    healthDescription: 'Each medicine is counted in one primary status only.',
-    expiryTimeline: 'Expiry Timeline',
-    expiryDescription: 'How inventory spreads across expiry windows',
+    healthDescription: 'Each medicine is counted in one primary status.',
+    expiryTimeline: 'Expiry Windows',
+    expiryDescription: 'Medicine counts grouped by expiry timing',
     companyDistribution: 'Stock by Company',
     companyDescription: 'Companies holding the highest current stock',
     next30Days: 'Next 30 Days',
@@ -99,53 +98,21 @@ const copy = {
   },
 };
 
-const metricStyles = {
-  total: {
-    text: 'text-teal-700',
-    badge: 'bg-teal-50 text-teal-700 ring-teal-100',
-    glow: 'from-teal-500/15 to-cyan-500/5',
-  },
-  lowStock: {
-    text: 'text-amber-700',
-    badge: 'bg-amber-50 text-amber-700 ring-amber-100',
-    glow: 'from-amber-500/15 to-orange-500/5',
-  },
-  expiringSoon: {
-    text: 'text-orange-700',
-    badge: 'bg-orange-50 text-orange-700 ring-orange-100',
-    glow: 'from-orange-500/15 to-rose-500/5',
-  },
-  expired: {
-    text: 'text-rose-700',
-    badge: 'bg-rose-50 text-rose-700 ring-rose-100',
-    glow: 'from-rose-500/15 to-red-500/5',
-  },
+const cardValueTone = {
+  total: 'text-teal-600',
+  lowStock: 'text-amber-600',
+  expiringSoon: 'text-orange-600',
+  expired: 'text-red-600',
 };
 
-const segmentStyles = {
-  normal: {
-    color: '#0f766e',
-    bg: 'bg-teal-500',
-    soft: 'bg-teal-50 text-teal-800 ring-teal-100',
-  },
-  lowStock: {
-    color: '#d97706',
-    bg: 'bg-amber-500',
-    soft: 'bg-amber-50 text-amber-800 ring-amber-100',
-  },
-  expiringSoon: {
-    color: '#ea580c',
-    bg: 'bg-orange-500',
-    soft: 'bg-orange-50 text-orange-800 ring-orange-100',
-  },
-  expired: {
-    color: '#e11d48',
-    bg: 'bg-rose-500',
-    soft: 'bg-rose-50 text-rose-800 ring-rose-100',
-  },
+const chartColors = {
+  normal: '#0f766e',
+  lowStock: '#f59e0b',
+  expiringSoon: '#f97316',
+  expired: '#ef4444',
+  later: '#14b8a6',
+  company: ['#0f766e', '#0891b2', '#f59e0b', '#6366f1', '#e11d48', '#16a34a'],
 };
-
-const companyPalette = ['#0f766e', '#0284c7', '#7c3aed', '#d97706', '#059669', '#be123c'];
 
 function getLocale(language?: string): Locale {
   if (language === 'en' || language === 'ps') {
@@ -153,6 +120,10 @@ function getLocale(language?: string): Locale {
   }
 
   return 'fa';
+}
+
+function formatNumber(value: number, locale: Locale) {
+  return value.toLocaleString(locale === 'en' ? 'en-US' : 'fa-AF');
 }
 
 function toPercent(value: number, total: number) {
@@ -163,54 +134,27 @@ function toPercent(value: number, total: number) {
   return Math.round((value / total) * 100);
 }
 
-function formatCount(value: number, locale: Locale) {
-  return value.toLocaleString(locale === 'en' ? 'en-US' : 'fa-AF');
-}
-
-function getTooltipValue(value: TooltipValueType | undefined) {
-  if (Array.isArray(value)) {
-    return Number(value[0] ?? 0);
-  }
-
-  return Number(value ?? 0);
-}
-
-function DashboardTooltip({
+function ChartTooltip({
   active,
   payload,
-  label,
   locale,
-  suffix,
-}: TooltipContentProps<TooltipValueType, string> & {
+}: {
+  active?: boolean;
+  payload?: Array<{ name?: string; value?: number; payload?: { label?: string } }>;
   locale: Locale;
-  suffix?: string;
 }) {
   if (!active || !payload?.length) {
     return null;
   }
 
-  const title = label ?? payload[0]?.name ?? '';
+  const item = payload[0];
+  const label = item.payload?.label ?? item.name ?? '';
+  const value = typeof item.value === 'number' ? item.value : 0;
 
   return (
-    <div className="min-w-36 rounded-2xl border border-slate-200/80 bg-white/95 px-4 py-3 text-sm shadow-[0_20px_45px_-28px_rgba(15,23,42,0.55)] backdrop-blur">
-      {title ? <p className="mb-2 font-semibold text-slate-900">{title}</p> : null}
-      <div className="space-y-2">
-        {payload.map((entry) => (
-          <div key={`${entry.dataKey ?? entry.name}`} className="flex items-center justify-between gap-5">
-            <span className="flex items-center gap-2 text-slate-500">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: entry.color ?? entry.fill ?? '#0f766e' }}
-              />
-              {entry.name}
-            </span>
-            <span className="font-bold text-slate-900">
-              {formatCount(getTooltipValue(entry.value), locale)}
-              {suffix ? ` ${suffix}` : ''}
-            </span>
-          </div>
-        ))}
-      </div>
+    <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-xl">
+      <p className="font-semibold text-slate-900">{label}</p>
+      <p className="mt-1 text-slate-600">{formatNumber(value, locale)}</p>
     </div>
   );
 }
@@ -229,49 +173,36 @@ export default function DashboardPage() {
     expired: 0,
   };
 
-  const statusSegments = [
+  const statusData = [
     {
       key: 'normal',
       label: tr.normalStock,
       value: statusBreakdown.normal,
-      color: segmentStyles.normal.color,
-      bg: segmentStyles.normal.bg,
-      soft: segmentStyles.normal.soft,
+      color: chartColors.normal,
+      soft: 'bg-teal-50 text-teal-800',
     },
     {
       key: 'lowStock',
       label: tr.lowStock,
       value: statusBreakdown.lowStock,
-      color: segmentStyles.lowStock.color,
-      bg: segmentStyles.lowStock.bg,
-      soft: segmentStyles.lowStock.soft,
+      color: chartColors.lowStock,
+      soft: 'bg-amber-50 text-amber-800',
     },
     {
       key: 'expiringSoon',
       label: tr.expiringSoon,
       value: statusBreakdown.expiringSoon,
-      color: segmentStyles.expiringSoon.color,
-      bg: segmentStyles.expiringSoon.bg,
-      soft: segmentStyles.expiringSoon.soft,
+      color: chartColors.expiringSoon,
+      soft: 'bg-orange-50 text-orange-800',
     },
     {
       key: 'expired',
       label: tr.expired,
       value: statusBreakdown.expired,
-      color: segmentStyles.expired.color,
-      bg: segmentStyles.expired.bg,
-      soft: segmentStyles.expired.soft,
+      color: chartColors.expired,
+      soft: 'bg-red-50 text-red-800',
     },
   ];
-
-  const totalStatusItems = statusSegments.reduce((sum, segment) => sum + segment.value, 0);
-  const statusChartData = statusSegments.map((segment) => ({
-    name: segment.label,
-    value: segment.value,
-    color: segment.color,
-    percentage: toPercent(segment.value, totalStatusItems),
-  }));
-  const visibleStatusChartData = statusChartData.filter((segment) => segment.value > 0);
 
   const expiryData = (summary?.expiryBuckets ?? [
     { key: 'expired', count: 0 },
@@ -279,7 +210,7 @@ export default function DashboardPage() {
     { key: 'within90Days', count: 0 },
     { key: 'later', count: 0 },
   ]).map((bucket) => ({
-    ...bucket,
+    key: bucket.key,
     label:
       bucket.key === 'expired'
         ? tr.expired
@@ -288,350 +219,242 @@ export default function DashboardPage() {
           : bucket.key === 'within90Days'
             ? tr.next90Days
             : tr.after90Days,
+    value: bucket.count,
     color:
       bucket.key === 'expired'
-        ? '#e11d48'
+        ? chartColors.expired
         : bucket.key === 'within30Days'
-          ? '#ea580c'
+          ? chartColors.expiringSoon
           : bucket.key === 'within90Days'
-            ? '#d97706'
-            : '#0f766e',
-    soft:
-      bucket.key === 'expired'
-        ? 'bg-rose-50 text-rose-700 ring-rose-100'
-        : bucket.key === 'within30Days'
-          ? 'bg-orange-50 text-orange-700 ring-orange-100'
-          : bucket.key === 'within90Days'
-            ? 'bg-amber-50 text-amber-700 ring-amber-100'
-            : 'bg-teal-50 text-teal-700 ring-teal-100',
-    gradientId:
-      bucket.key === 'expired'
-        ? 'expiryExpiredGradient'
-        : bucket.key === 'within30Days'
-          ? 'expirySoonGradient'
-          : bucket.key === 'within90Days'
-            ? 'expiryWatchGradient'
-            : 'expiryHealthyGradient',
+            ? chartColors.lowStock
+            : chartColors.later,
   }));
 
-  const companyData = (summary?.companyBreakdown ?? []).slice(0, 6);
-  const companyChartData = companyData.map((company, index) => ({
-    ...company,
-    fill: companyPalette[index % companyPalette.length],
-  }));
-  const hasChartData = totalStatusItems > 0;
-  const metricCards = [
-    {
-      key: 'total',
-      label: tr.totalMedicines,
-      value: summary?.total ?? 0,
-      style: metricStyles.total,
-    },
-    {
-      key: 'lowStock',
-      label: tr.lowStock,
-      value: summary?.lowStock ?? 0,
-      style: metricStyles.lowStock,
-    },
-    {
-      key: 'expiringSoon',
-      label: tr.expiringSoon,
-      value: summary?.expiringSoon ?? 0,
-      style: metricStyles.expiringSoon,
-    },
-    {
-      key: 'expired',
-      label: tr.expired,
-      value: summary?.expired ?? 0,
-      style: metricStyles.expired,
-    },
-  ];
+  const companyData = (summary?.companyBreakdown ?? [])
+    .slice(0, 6)
+    .map((company, index) => ({
+      ...company,
+      label: company.company,
+      color: chartColors.company[index % chartColors.company.length],
+    }));
+
+  const totalStatusItems = statusData.reduce((sum, item) => sum + item.value, 0);
+  const hasStatusData = totalStatusItems > 0;
+  const hasExpiryData = expiryData.some((bucket) => bucket.value > 0);
+  const hasCompanyData = companyData.length > 0;
 
   return (
-    <div className="app-page-shell space-y-6" dir={dir}>
-      <div className="app-card-strong rounded-[28px] px-5 py-5 sm:px-6">
-        <p className="text-sm font-semibold text-teal-700">
+    <div className="space-y-6" dir={dir}>
+      <div>
+        <p className="text-sm font-medium text-teal-700">
           {tr.welcome}
           {user?.name ? `, ${user.name}` : ''}
         </p>
-        <h1 className="mt-1 text-3xl font-bold text-slate-950">{tr.title}</h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">{tr.subtitle}</p>
+        <h1 className="mt-1 text-3xl font-bold text-gray-900">{tr.title}</h1>
+        <p className="mt-2 max-w-3xl text-sm text-gray-500">{tr.subtitle}</p>
       </div>
 
       {error && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {tr.failed}
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {metricCards.map((card) => (
-          <article key={card.key} className={`app-stat-card rounded-2xl bg-gradient-to-br ${card.style.glow} p-5`}>
-            <div className="flex items-start justify-between gap-4">
-              <p className="text-sm font-medium text-slate-500">{card.label}</p>
-              <span className={`rounded-full px-2.5 py-1 text-xs font-bold ring-1 ${card.style.badge}`}>
-                {formatCount(card.value, locale)}
-              </span>
-            </div>
-            <p className={`mt-5 text-4xl font-bold ${card.style.text}`}>
-              {formatCount(card.value, locale)}
-            </p>
-          </article>
-        ))}
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <p className="text-sm text-gray-500">{tr.totalMedicines}</p>
+          <p className={`mt-3 text-3xl font-bold ${cardValueTone.total}`}>
+            {formatNumber(summary?.total ?? 0, locale)}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <p className="text-sm text-gray-500">{tr.lowStock}</p>
+          <p className={`mt-3 text-3xl font-bold ${cardValueTone.lowStock}`}>
+            {formatNumber(summary?.lowStock ?? 0, locale)}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <p className="text-sm text-gray-500">{tr.expiringSoon}</p>
+          <p className={`mt-3 text-3xl font-bold ${cardValueTone.expiringSoon}`}>
+            {formatNumber(summary?.expiringSoon ?? 0, locale)}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <p className="text-sm text-gray-500">{tr.expired}</p>
+          <p className={`mt-3 text-3xl font-bold ${cardValueTone.expired}`}>
+            {formatNumber(summary?.expired ?? 0, locale)}
+          </p>
+        </div>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        <section className="app-chart-card overflow-hidden rounded-[28px] p-5 sm:p-6">
+        <section className="overflow-hidden rounded-[28px] border border-teal-100 bg-linear-to-br from-white via-teal-50/40 to-cyan-50/60 p-6 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-950">{tr.healthDistribution}</h2>
-              <p className="mt-1 text-sm leading-6 text-slate-500">{tr.healthDescription}</p>
+              <h2 className="text-lg font-semibold text-gray-900">{tr.healthDistribution}</h2>
+              <p className="mt-1 text-sm text-gray-500">{tr.healthDescription}</p>
             </div>
-            <div className="rounded-full border border-teal-100 bg-teal-50 px-3 py-1 text-xs font-bold text-teal-700">
-              {formatCount(summary?.total ?? 0, locale)} {tr.medicines}
+            <div className="rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-teal-700 shadow-sm">
+              {formatNumber(summary?.total ?? 0, locale)} {tr.medicines}
             </div>
           </div>
 
           {isLoading && !summary ? (
-            <div className="py-16 text-sm text-slate-500">{tr.loading}</div>
-          ) : !hasChartData ? (
-            <div className="app-chart-empty mt-6 rounded-2xl px-6 py-12 text-center text-sm text-slate-500">
-              {tr.noChartData}
-            </div>
+            <div className="py-16 text-sm text-gray-500">{tr.loading}</div>
+          ) : !hasStatusData ? (
+            <div className="py-16 text-sm text-gray-500">{tr.noChartData}</div>
           ) : (
-            <div className="mt-6 grid gap-6 md:grid-cols-[260px_1fr] md:items-center">
-              <div className="relative mx-auto h-[270px] w-full max-w-[280px]">
+            <div className="mt-8 grid gap-7 lg:grid-cols-[260px_1fr] lg:items-center">
+              <div className="relative h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={visibleStatusChartData}
+                      data={statusData}
                       dataKey="value"
-                      nameKey="name"
+                      nameKey="label"
                       cx="50%"
                       cy="50%"
-                      innerRadius={76}
-                      outerRadius={112}
-                      paddingAngle={2}
+                      innerRadius={70}
+                      outerRadius={104}
+                      paddingAngle={3}
                       stroke="#ffffff"
-                      strokeWidth={5}
+                      strokeWidth={4}
                     >
-                      {visibleStatusChartData.map((segment) => (
-                        <Cell key={segment.name} fill={segment.color} />
+                      {statusData.map((entry) => (
+                        <Cell key={entry.key} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      content={(props) => (
-                        <DashboardTooltip {...props} locale={locale} suffix={tr.medicines} />
-                      )}
-                    />
+                    <Tooltip content={<ChartTooltip locale={locale} />} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <div className="flex h-32 w-32 flex-col items-center justify-center rounded-full border border-slate-100 bg-white/95 shadow-[inset_0_0_24px_rgba(15,23,42,0.06),0_16px_36px_-28px_rgba(15,23,42,0.8)]">
-                    <span className="text-3xl font-bold text-slate-950">
-                      {formatCount(totalStatusItems, locale)}
-                    </span>
-                    <span className="mt-1 text-xs font-semibold uppercase text-slate-400">
+                  <div className="text-center">
+                    <p className="text-3xl font-black text-slate-900">
+                      {formatNumber(totalStatusItems, locale)}
+                    </p>
+                    <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
                       {tr.medicines}
-                    </span>
+                    </p>
                   </div>
                 </div>
               </div>
 
               <div className="grid gap-3">
-                {statusSegments.map((segment) => {
-                  const percentage = toPercent(segment.value, totalStatusItems);
-
-                  return (
-                    <div
-                      key={segment.key}
-                      className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-[0_14px_35px_-32px_rgba(15,23,42,0.5)]"
-                    >
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                          <span className={`h-3 w-3 rounded-full ${segment.bg}`} />
-                          <div>
-                            <p className="text-sm font-semibold text-slate-800">{segment.label}</p>
-                            <p className="text-xs text-slate-500">
-                              {formatCount(percentage, locale)}% {tr.share}
-                            </p>
-                          </div>
-                        </div>
-                        <div className={`rounded-full px-3 py-1 text-sm font-bold ring-1 ${segment.soft}`}>
-                          {formatCount(segment.value, locale)}
-                        </div>
-                      </div>
-                      <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className="h-full rounded-full"
-                          style={{ width: `${percentage}%`, backgroundColor: segment.color }}
-                        />
+                {statusData.map((item) => (
+                  <div
+                    key={item.key}
+                    className="flex items-center justify-between rounded-2xl border border-white/70 bg-white/80 px-4 py-3 shadow-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{item.label}</p>
+                        <p className="text-xs text-gray-500">
+                          {toPercent(item.value, totalStatusItems)}% {tr.share}
+                        </p>
                       </div>
                     </div>
-                  );
-                })}
+                    <div className={`rounded-full px-3 py-1 text-sm font-semibold ${item.soft}`}>
+                      {formatNumber(item.value, locale)}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
         </section>
 
-        <section className="app-chart-card rounded-[28px] p-5 sm:p-6">
+        <section className="rounded-[28px] border border-gray-100 bg-white p-6 shadow-sm">
           <div>
-            <h2 className="text-lg font-bold text-slate-950">{tr.expiryTimeline}</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-500">{tr.expiryDescription}</p>
+            <h2 className="text-lg font-semibold text-gray-900">{tr.expiryTimeline}</h2>
+            <p className="mt-1 text-sm text-gray-500">{tr.expiryDescription}</p>
           </div>
 
           {isLoading && !summary ? (
-            <div className="py-16 text-sm text-slate-500">{tr.loading}</div>
-          ) : !hasChartData ? (
-            <div className="app-chart-empty mt-6 rounded-2xl px-6 py-12 text-center text-sm text-slate-500">
-              {tr.noChartData}
-            </div>
+            <div className="py-16 text-sm text-gray-500">{tr.loading}</div>
+          ) : !hasExpiryData ? (
+            <div className="py-16 text-sm text-gray-500">{tr.noChartData}</div>
           ) : (
-            <div className="-mx-2 mt-6 overflow-x-auto px-2">
-              <div className="h-[300px] min-w-[520px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={expiryData} margin={{ top: 12, right: 10, bottom: 8, left: 0 }}>
-                    <defs>
-                      <linearGradient id="expiryExpiredGradient" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#fb7185" />
-                        <stop offset="100%" stopColor="#be123c" />
-                      </linearGradient>
-                      <linearGradient id="expirySoonGradient" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#fb923c" />
-                        <stop offset="100%" stopColor="#c2410c" />
-                      </linearGradient>
-                      <linearGradient id="expiryWatchGradient" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#fbbf24" />
-                        <stop offset="100%" stopColor="#b45309" />
-                      </linearGradient>
-                      <linearGradient id="expiryHealthyGradient" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#2dd4bf" />
-                        <stop offset="100%" stopColor="#0f766e" />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid vertical={false} strokeDasharray="4 4" />
-                    <XAxis
-                      dataKey="label"
-                      axisLine={false}
-                      tickLine={false}
-                      tickMargin={12}
-                      tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }}
-                      interval={0}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: '#94a3b8', fontSize: 12 }}
-                      tickFormatter={(value: number) => formatCount(value, locale)}
-                      width={42}
-                    />
-                    <Tooltip
-                      cursor={{ fill: 'rgba(20, 184, 166, 0.08)' }}
-                      content={(props) => (
-                        <DashboardTooltip {...props} locale={locale} suffix={tr.medicines} />
-                      )}
-                    />
-                    <Bar dataKey="count" name={tr.medicines} radius={[12, 12, 4, 4]} maxBarSize={56}>
-                      {expiryData.map((bucket) => (
-                        <Cell key={bucket.key} fill={`url(#${bucket.gradientId})`} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+            <div className="mt-6 h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={expiryData} margin={{ top: 12, right: 8, left: -18, bottom: 8 }}>
+                  <CartesianGrid vertical={false} stroke="#e5e7eb" strokeDasharray="4 4" />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                    interval={0}
+                  />
+                  <YAxis allowDecimals={false} tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<ChartTooltip locale={locale} />} />
+                  <Bar dataKey="value" radius={[12, 12, 4, 4]} maxBarSize={64}>
+                    {expiryData.map((entry) => (
+                      <Cell key={entry.key} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           )}
         </section>
       </div>
 
-      <section className="app-chart-card rounded-[28px] p-5 sm:p-6">
+      <section className="rounded-[28px] border border-gray-100 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-slate-950">{tr.companyDistribution}</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-500">{tr.companyDescription}</p>
+            <h2 className="text-lg font-semibold text-gray-900">{tr.companyDistribution}</h2>
+            <p className="mt-1 text-sm text-gray-500">{tr.companyDescription}</p>
           </div>
-          <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600">
-            {formatCount(companyData.length, locale)}
+          <div className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+            {formatNumber(companyData.length, locale)}
           </div>
         </div>
 
         {isLoading && !summary ? (
-          <div className="py-16 text-sm text-slate-500">{tr.loading}</div>
-        ) : companyData.length === 0 ? (
-          <div className="app-chart-empty mt-6 rounded-2xl px-6 py-12 text-center text-sm text-slate-500">
-            {tr.noChartData}
-          </div>
+          <div className="py-16 text-sm text-gray-500">{tr.loading}</div>
+        ) : !hasCompanyData ? (
+          <div className="py-16 text-sm text-gray-500">{tr.noChartData}</div>
         ) : (
-          <div className="-mx-2 mt-6 overflow-x-auto px-2">
-            <div className="h-[330px] min-w-[680px]">
+          <div className="mt-7 grid gap-6 xl:grid-cols-[1fr_320px] xl:items-center">
+            <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={companyChartData}
-                  layout="vertical"
-                  margin={{ top: 8, right: 28, bottom: 8, left: 10 }}
-                >
-                  <CartesianGrid horizontal={false} strokeDasharray="4 4" />
-                  <XAxis
-                    type="number"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#94a3b8', fontSize: 12 }}
-                    tickFormatter={(value: number) => formatCount(value, locale)}
-                  />
+                <BarChart data={companyData} layout="vertical" margin={{ top: 8, right: 24, left: 24, bottom: 8 }}>
+                  <CartesianGrid horizontal={false} stroke="#e5e7eb" strokeDasharray="4 4" />
+                  <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
                   <YAxis
                     type="category"
-                    dataKey="company"
+                    dataKey="label"
+                    width={110}
+                    tick={{ fill: '#475569', fontSize: 12 }}
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#475569', fontSize: 12, fontWeight: 600 }}
-                    tickFormatter={(value: string) =>
-                      value.length > 20 ? `${value.slice(0, 20)}...` : value
-                    }
-                    width={160}
                   />
-                  <Tooltip
-                    cursor={{ fill: 'rgba(15, 118, 110, 0.07)' }}
-                    content={(props) => (
-                      <DashboardTooltip {...props} locale={locale} suffix={tr.units} />
-                    )}
-                  />
-                  <Bar
-                    dataKey="quantity"
-                    name={tr.quantity}
-                    radius={[0, 12, 12, 0]}
-                    barSize={20}
-                    background={{ fill: '#f1f5f9', radius: 12 }}
-                  >
-                    {companyChartData.map((company) => (
-                      <Cell key={company.company} fill={company.fill} />
+                  <Tooltip content={<ChartTooltip locale={locale} />} />
+                  <Bar dataKey="quantity" radius={[0, 12, 12, 0]} maxBarSize={30}>
+                    {companyData.map((entry) => (
+                      <Cell key={entry.company} fill={entry.color} />
                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {companyChartData.map((company, index) => (
-                <div
-                  key={company.company}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white/80 px-4 py-3"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-900">{company.company}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {formatCount(company.medicines, locale)} {tr.medicines}
-                    </p>
+            <div className="grid gap-3">
+              {companyData.map((company) => (
+                <div key={company.company} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-900">{company.company}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {formatNumber(company.medicines, locale)} {tr.medicines}
+                      </p>
+                    </div>
+                    <span className="mt-1 h-3 w-3 flex-shrink-0 rounded-full" style={{ backgroundColor: company.color }} />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: companyPalette[index % companyPalette.length] }}
-                    />
-                    <span className="text-sm font-bold text-slate-700">
-                      {formatCount(company.quantity, locale)}
-                    </span>
-                  </div>
+                  <p className="mt-2 text-sm font-bold text-slate-700">
+                    {formatNumber(company.quantity, locale)} {tr.units}
+                  </p>
                 </div>
               ))}
             </div>
