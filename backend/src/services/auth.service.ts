@@ -29,8 +29,10 @@ export interface LoginResult {
 export const authService = {
   // ─── Login ────────────────────────────────────────────────────────────────
   async login(username: string, password: string): Promise<LoginResult> {
+    const normalizedUsername = username.trim();
+
     // 1. Find user by username
-    const user = await prisma.user.findUnique({ where: { username } });
+    const user = await prisma.user.findUnique({ where: { username: normalizedUsername } });
 
     // 2. Use the same error for "user not found" and "wrong password"
     //    This prevents attackers from knowing which one failed (user enumeration)

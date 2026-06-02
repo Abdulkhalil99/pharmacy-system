@@ -1,6 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import {
+  AlertCircle,
+  AtSign,
+  Check,
+  CheckCircle2,
+  KeyRound,
+  Languages,
+  Loader2,
+  LockKeyhole,
+  Mail,
+  Phone,
+  ShieldCheck,
+  UserRound,
+  X,
+} from 'lucide-react';
 import type { UserApiResponse, UserFormData, UserRecord } from '@/hooks/useUsers';
 import { checkUsernameAvailability } from '@/hooks/useUsers';
 import {
@@ -121,6 +136,11 @@ const copy = {
 };
 
 const usernamePattern = /^[A-Za-z0-9]+$/;
+const inputBase =
+  'h-12 w-full rounded-xl border bg-white px-10 text-sm text-slate-900 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10';
+const inputNormal = 'border-slate-200 hover:border-slate-300';
+const inputError = 'border-red-300 bg-red-50/60 focus:border-red-400 focus:ring-red-400/10';
+const iconClass = 'pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 start-3';
 
 export function UserForm({ language, user, onSubmit, onClose }: UserFormProps) {
   const locale = getLocaleFromLanguage(language);
@@ -288,66 +308,93 @@ export function UserForm({ language, user, onSubmit, onClose }: UserFormProps) {
   };
 
   const renderError = (key: string) =>
-    errors[key] ? <p className="mt-1 text-xs text-red-500">{errors[key]}</p> : null;
+    errors[key] ? (
+      <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-600">
+        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+        {errors[key]}
+      </p>
+    ) : null;
+
+  const fieldClass = (key?: string) => `${inputBase} ${key && errors[key] ? inputError : inputNormal}`;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm" dir={dir}>
-      <div className="w-full max-w-3xl overflow-hidden rounded-[2rem] bg-white shadow-2xl">
-        <div className="border-b border-slate-100 px-6 py-5">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-md sm:p-6" dir={dir}>
+      <div className="max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-2xl border border-white/70 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]">
+        <div className="relative overflow-hidden border-b border-slate-200 bg-slate-900 px-5 py-5 text-white sm:px-7">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-teal-400 via-emerald-300 to-red-400" />
           <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">{isEdit ? tr.edit : tr.add}</h2>
-              <p className="mt-1 text-sm text-slate-500">{tr.subtitle}</p>
+            <div className="flex min-w-0 items-start gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/10 ring-1 ring-white/15">
+                <UserRound className="h-6 w-6 text-teal-200" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-xl font-bold tracking-normal sm:text-2xl">{isEdit ? tr.edit : tr.add}</h2>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-300">{tr.subtitle}</p>
+              </div>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              aria-label={tr.cancel}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
             >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X className="h-5 w-5" />
             </button>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5 px-6 py-6">
+        <form onSubmit={handleSubmit} className="max-h-[calc(92vh-112px)] overflow-y-auto">
+          <div className="space-y-6 px-5 py-6 sm:px-7">
           {apiError ? (
-            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               {apiError}
             </div>
           ) : null}
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">{tr.fullName}</label>
-              <input
-                value={form.name}
-                onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-                className={`w-full rounded-2xl border px-3 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                  errors.name ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'
-                }`}
-              />
+              <label className="mb-2 block text-sm font-semibold text-slate-700">{tr.fullName}</label>
+              <div className="relative">
+                <UserRound className={iconClass} />
+                <input
+                  value={form.name}
+                  onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+                  className={fieldClass('name')}
+                />
+              </div>
               {renderError('name')}
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">{tr.username}</label>
-              <input
-                value={form.username}
-                onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
-                className={`w-full rounded-2xl border px-3 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                  errors.username ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'
-                }`}
-              />
+              <label className="mb-2 block text-sm font-semibold text-slate-700">{tr.username}</label>
+              <div className="relative">
+                <AtSign className={iconClass} />
+                <input
+                  value={form.username}
+                  onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
+                  className={`${fieldClass('username')} ${usernameState.available === true ? 'border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/10' : ''}`}
+                />
+                {usernameState.checking ? (
+                  <Loader2 className="absolute top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400 end-3" />
+                ) : usernameState.available === true ? (
+                  <CheckCircle2 className="absolute top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500 end-3" />
+                ) : null}
+              </div>
               {usernameState.checking ? (
-                <p className="mt-1 text-xs text-slate-500">{tr.checking}</p>
+                <p className="mt-2 text-xs font-medium text-slate-500">{tr.checking}</p>
               ) : null}
               {!usernameState.checking && usernameState.available === true ? (
-                <p className="mt-1 text-xs text-emerald-600">{tr.usernameAvailable}</p>
+                <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-emerald-600">
+                  <Check className="h-3.5 w-3.5 shrink-0" />
+                  {tr.usernameAvailable}
+                </p>
               ) : null}
               {!errors.username && !usernameState.checking && usernameState.available === false ? (
-                <p className="mt-1 text-xs text-red-500">{tr.usernameTaken}</p>
+                <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-600">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  {tr.usernameTaken}
+                </p>
               ) : null}
               {renderError('username')}
             </div>
@@ -355,61 +402,85 @@ export function UserForm({ language, user, onSubmit, onClose }: UserFormProps) {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">{tr.role}</label>
-              <select
-                value={form.role}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, role: event.target.value as SystemUserRole }))
-                }
-                className={`w-full rounded-2xl border px-3 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                  errors.role ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'
-                }`}
-              >
-                {roles.map((role) => (
-                  <option key={role} value={role}>
-                    {getRoleLabel(role, locale)}
-                  </option>
-                ))}
-              </select>
+              <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <ShieldCheck className="h-4 w-4 text-slate-400" />
+                {tr.role}
+              </label>
+              <div className={`grid grid-cols-3 gap-2 rounded-xl border p-1.5 ${errors.role ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'}`}>
+                {roles.map((role) => {
+                  const selected = form.role === role;
+                  return (
+                    <button
+                      key={role}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setForm((current) => ({ ...current, role }))}
+                      className={`min-h-10 rounded-lg px-2 text-xs font-bold transition-all sm:text-sm ${
+                        selected
+                          ? 'bg-slate-900 text-white shadow-sm'
+                          : 'text-slate-600 hover:bg-white hover:text-slate-900'
+                      }`}
+                    >
+                      {getRoleLabel(role, locale)}
+                    </button>
+                  );
+                })}
+              </div>
               {renderError('role')}
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">{tr.language}</label>
-              <select
-                value={form.language}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, language: event.target.value as SystemLanguage }))
-                }
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-teal-500"
-              >
-                {languages.map((option) => (
-                  <option key={option} value={option}>
-                    {getLanguageLabel(option, locale)}
-                  </option>
-                ))}
-              </select>
+              <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <Languages className="h-4 w-4 text-slate-400" />
+                {tr.language}
+              </label>
+              <div className="grid grid-cols-3 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1.5">
+                {languages.map((option) => {
+                  const selected = form.language === option;
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setForm((current) => ({ ...current, language: option }))}
+                      className={`min-h-10 rounded-lg px-2 text-xs font-bold transition-all sm:text-sm ${
+                        selected
+                          ? 'bg-teal-600 text-white shadow-sm'
+                          : 'text-slate-600 hover:bg-white hover:text-slate-900'
+                      }`}
+                    >
+                      {getLanguageLabel(option, locale)}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">{tr.phone}</label>
-              <input
-                value={form.phone}
-                onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
+              <label className="mb-2 block text-sm font-semibold text-slate-700">{tr.phone}</label>
+              <div className="relative">
+                <Phone className={iconClass} />
+                <input
+                  value={form.phone}
+                  onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
+                  className={fieldClass()}
+                />
+              </div>
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">{tr.email}</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
+              <label className="mb-2 block text-sm font-semibold text-slate-700">{tr.email}</label>
+              <div className="relative">
+                <Mail className={iconClass} />
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+                  className={fieldClass()}
+                />
+              </div>
             </div>
           </div>
 
@@ -417,75 +488,91 @@ export function UserForm({ language, user, onSubmit, onClose }: UserFormProps) {
             <button
               type="button"
               onClick={() => setChangePassword((current) => !current)}
-              className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-100"
+              className={`inline-flex min-h-10 items-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-colors ${
+                changePassword
+                  ? 'border-teal-200 bg-teal-50 text-teal-700'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+              }`}
             >
+              <KeyRound className="h-4 w-4" />
               {tr.changePassword}
             </button>
           ) : null}
 
           {!isEdit || changePassword ? (
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">{tr.password}</label>
-                <input
-                  type="password"
-                  value={form.password}
-                  onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-                  className={`w-full rounded-2xl border px-3 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                    errors.password ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'
-                  }`}
-                />
-                <p className="mt-1 text-xs text-slate-500">{tr.passwordHint}</p>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">{tr.password}</label>
+                <div className="relative">
+                  <LockKeyhole className={iconClass} />
+                  <input
+                    type="password"
+                    value={form.password}
+                    onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                    className={fieldClass('password')}
+                  />
+                </div>
+                <p className="mt-2 text-xs font-medium text-slate-500">{tr.passwordHint}</p>
                 {renderError('password')}
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">{tr.confirmPassword}</label>
-                <input
-                  type="password"
-                  value={form.confirmPassword}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, confirmPassword: event.target.value }))
-                  }
-                  className={`w-full rounded-2xl border px-3 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-teal-500 ${
-                    errors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-slate-50'
-                  }`}
-                />
+                <label className="mb-2 block text-sm font-semibold text-slate-700">{tr.confirmPassword}</label>
+                <div className="relative">
+                  <KeyRound className={iconClass} />
+                  <input
+                    type="password"
+                    value={form.confirmPassword}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, confirmPassword: event.target.value }))
+                    }
+                    className={fieldClass('confirmPassword')}
+                  />
+                </div>
                 {renderError('confirmPassword')}
               </div>
             </div>
           ) : null}
 
-          <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <span className="text-sm font-medium text-slate-700">{tr.isActive}</span>
+          <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <span className="flex items-center gap-3 text-sm font-semibold text-slate-700">
+              <span className={`grid h-9 w-9 place-items-center rounded-xl ${form.isActive ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                <CheckCircle2 className="h-4 w-4" />
+              </span>
+              {tr.isActive}
+            </span>
             <button
               type="button"
+              aria-label={tr.isActive}
+              aria-pressed={form.isActive}
               onClick={() => setForm((current) => ({ ...current, isActive: !current.isActive }))}
-              className={`relative h-7 w-12 rounded-full transition-colors ${
-                form.isActive ? 'bg-teal-600' : 'bg-slate-300'
+              className={`relative h-8 w-14 rounded-full transition-colors ${
+                form.isActive ? 'bg-emerald-500' : 'bg-slate-300'
               }`}
             >
               <span
-                className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${
-                  form.isActive ? 'start-6' : 'start-1'
+                className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-sm transition-transform ${
+                  form.isActive ? 'start-7' : 'start-1'
                 }`}
               />
             </button>
-          </label>
+          </div>
+          </div>
 
-          <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+          <div className="flex flex-col-reverse gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row sm:justify-end sm:px-7">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+              className="h-11 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100"
             >
               {tr.cancel}
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="rounded-2xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-teal-700 disabled:bg-slate-400"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 text-sm font-bold text-white shadow-sm transition-colors hover:bg-teal-700 disabled:bg-slate-400"
             >
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               {isSaving ? tr.saving : tr.save}
             </button>
           </div>
