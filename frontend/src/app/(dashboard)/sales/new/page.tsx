@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { startTransition, useDeferredValue, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
@@ -25,7 +26,9 @@ const copy = {
   fa: {
     back: 'تاریخچه فروش',
     title: 'نسخه جدید',
+    editTitle: 'ویرایش نسخه',
     subtitle: 'دواها را جستجو کنید، نسخه بسازید و فوراً رسید چاپ کنید.',
+    editSubtitle: 'اقلام، مشتری و پرداخت نسخه ثبت شده را اصلاح کنید.',
     searchMedicine: 'جستجوی دوا',
     searchPlaceholder: 'نام دوا یا بارکد را بنویسید...',
     searchHint: 'دوا را از لیست انتخاب کنید تا به نسخه اضافه شود.',
@@ -57,7 +60,9 @@ const copy = {
     itemsCount: 'تعداد اقلام',
     estimatedProfit: 'سود تخمینی',
     submit: 'ثبت نسخه و چاپ رسید',
+    update: 'ذخیره تغییرات',
     submitting: 'در حال ثبت...',
+    updating: 'در حال ذخیره...',
     overpayment: 'مبلغ پرداخت نمی‌تواند بیشتر از مجموع باشد.',
     addAtLeastOne: 'حداقل یک دوا به نسخه اضافه کنید.',
     outOfStock: 'این دوا موجودی کافی ندارد.',
@@ -67,11 +72,15 @@ const copy = {
     partialBadge: 'پرداخت قسمی',
     debtBadge: 'قرض',
     searchLoading: 'در حال جستجو...',
+    loadFailed: 'بارگذاری فروش موفق نشد.',
+    updateFailed: 'ذخیره تغییرات موفق نشد.',
   },
   ps: {
     back: 'د پلور تاریخچه',
     title: 'نوې نسخه',
+    editTitle: 'نسخه سمول',
     subtitle: 'درمل ولټوئ، نسخه جوړه کړئ او سمدستي رسید چاپ کړئ.',
+    editSubtitle: 'د ثبت شوې نسخې توکي، پیرودونکی او تادیه اصلاح کړئ.',
     searchMedicine: 'د درملو لټون',
     searchPlaceholder: 'د درمل نوم یا بارکوډ ولیکئ...',
     searchHint: 'له لېست څخه درمل وټاکئ تر څو نسخې ته ورزیات شي.',
@@ -103,7 +112,9 @@ const copy = {
     itemsCount: 'د توکو شمېر',
     estimatedProfit: 'اټکلي ګټه',
     submit: 'نسخه ثبت او رسید چاپ کړئ',
+    update: 'بدلونونه خوندي کړئ',
     submitting: 'ثبتېږي...',
+    updating: 'خوندي کېږي...',
     overpayment: 'ورکړل شوې پیسې تر مجموع زیاتې نشي کېدای.',
     addAtLeastOne: 'لږ تر لږه یو درمل ورزیات کړئ.',
     outOfStock: 'د دې درملو ذخیره کافي نه ده.',
@@ -113,11 +124,15 @@ const copy = {
     partialBadge: 'قسمي تادیه',
     debtBadge: 'پور',
     searchLoading: 'لټون روان دی...',
+    loadFailed: 'پلور بار نه شو.',
+    updateFailed: 'بدلونونه خوندي نه شول.',
   },
   en: {
     back: 'Sales History',
     title: 'New Prescription',
+    editTitle: 'Edit Prescription',
     subtitle: 'Search medicines, build the prescription, and print the receipt immediately.',
+    editSubtitle: 'Adjust the medicines, customer, and payment for this saved prescription.',
     searchMedicine: 'Medicine Search',
     searchPlaceholder: 'Type medicine name or barcode...',
     searchHint: 'Pick a medicine from the list to add it to the prescription.',
@@ -149,7 +164,9 @@ const copy = {
     itemsCount: 'Items Count',
     estimatedProfit: 'Estimated Profit',
     submit: 'Create Prescription and Print Receipt',
+    update: 'Save Changes',
     submitting: 'Saving...',
+    updating: 'Saving Changes...',
     overpayment: 'Paid amount cannot be greater than the total.',
     addAtLeastOne: 'Add at least one medicine to the prescription.',
     outOfStock: 'This medicine does not have enough stock.',
@@ -159,6 +176,8 @@ const copy = {
     partialBadge: 'Partial Payment',
     debtBadge: 'On Debt',
     searchLoading: 'Searching...',
+    loadFailed: 'Failed to load sale.',
+    updateFailed: 'Failed to save changes.',
   },
 };
 
@@ -207,6 +226,9 @@ function getCustomerLabel(customer: CustomerOption) {
 
 export default function NewSalePage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const editSaleId = searchParams.get('edit');
+  const isEditMode = Boolean(editSaleId);
   const locale = getLocale(user?.language);
   const tr = copy[locale];
   const dir = locale === 'en' ? 'ltr' : 'rtl';
@@ -228,6 +250,7 @@ export default function NewSalePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [receipt, setReceipt] = useState<SaleReceipt | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [isLoadingSale, setIsLoadingSale] = useState(false);
 
   const totalAmount = items.reduce((sum, item) => sum + item.sellPrice * item.quantitySelected, 0);
   const estimatedProfit = items.reduce(
@@ -287,6 +310,87 @@ export default function NewSalePage() {
       window.clearTimeout(timeoutId);
     };
   }, [deferredCustomerQuery]);
+
+  useEffect(() => {
+    if (!editSaleId) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadSale = async () => {
+      setIsLoadingSale(true);
+      setFormError('');
+
+      try {
+        const response = await api.get<SaleReceipt>(`/sales/${editSaleId}`);
+
+        if (!response.success || !response.data) {
+          setFormError(response.message || tr.loadFailed);
+          return;
+        }
+
+        const sale = response.data;
+        const loadedItems = await Promise.all(
+          sale.items.map(async (item) => {
+            const medicineResponse = await api.get<MedicineSearchResult>(`/medicines/${item.medicineId}`);
+            const medicine = medicineResponse.success && medicineResponse.data
+              ? medicineResponse.data
+              : null;
+
+            return {
+              id: item.medicineId,
+              name: item.medicineName,
+              barcode: item.barcode,
+              company: item.company,
+              buyPrice: item.unitPrice - item.unitProfit,
+              sellPrice: item.unitPrice,
+              quantity: (medicine?.quantity ?? 0) + item.quantity,
+              minQuantity: medicine?.minQuantity ?? 0,
+              expiryDate: medicine?.expiryDate ?? new Date().toISOString(),
+              quantitySelected: item.quantity,
+            };
+          })
+        );
+
+        if (isCancelled) {
+          return;
+        }
+
+        setItems(loadedItems);
+        setPaidAmountInput(String(sale.totals.paidAmount));
+        setReceipt(sale);
+
+        if (sale.customer) {
+          const customer = {
+            id: sale.customer.id,
+            name: sale.customer.name,
+            phone: sale.customer.phone,
+            totalDebt: sale.customer.totalDebt,
+            createdAt: sale.createdAt,
+          };
+          setSelectedCustomer(customer);
+          setCustomerQuery(getCustomerLabel(customer));
+        } else {
+          clearCustomer();
+        }
+      } catch {
+        if (!isCancelled) {
+          setFormError(tr.loadFailed);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingSale(false);
+        }
+      }
+    };
+
+    void loadSale();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [editSaleId, tr.loadFailed]);
 
   const addMedicine = (medicine: MedicineSearchResult) => {
     if (medicine.quantity <= 0) {
@@ -363,27 +467,33 @@ export default function NewSalePage() {
     setIsSubmitting(true);
 
     try {
-      const response = await api.post<SaleReceipt>('/sales/prescription', {
+      const payload = {
         customerId: selectedCustomer?.id,
         paidAmount,
         items: items.map((item) => ({
           medicineId: item.id,
           quantity: item.quantitySelected,
         })),
-      });
+      };
+
+      const response = isEditMode && editSaleId
+        ? await api.put<SaleReceipt>(`/sales/${editSaleId}`, payload)
+        : await api.post<SaleReceipt>('/sales/prescription', payload);
 
       if (response.success && response.data) {
         setReceipt(response.data);
         setReceiptOpen(true);
-        setItems([]);
-        setMedicineQuery('');
-        setPaidAmountInput('0');
-        clearCustomer();
+        if (!isEditMode) {
+          setItems([]);
+          setMedicineQuery('');
+          setPaidAmountInput('0');
+          clearCustomer();
+        }
       } else {
-        setFormError(response.message || 'Failed to create prescription');
+        setFormError(response.message || (isEditMode ? tr.updateFailed : 'Failed to create prescription'));
       }
     } catch {
-      setFormError('Failed to create prescription');
+      setFormError(isEditMode ? tr.updateFailed : 'Failed to create prescription');
     } finally {
       setIsSubmitting(false);
     }
@@ -400,8 +510,12 @@ export default function NewSalePage() {
             >
               {tr.back}
             </Link>
-            <h1 className="mt-4 text-3xl font-black tracking-tight">{tr.title}</h1>
-            <p className="mt-2 max-w-2xl text-sm text-white/75">{tr.subtitle}</p>
+            <h1 className="mt-4 text-3xl font-black tracking-tight">
+              {isEditMode ? tr.editTitle : tr.title}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-white/75">
+              {isEditMode ? tr.editSubtitle : tr.subtitle}
+            </p>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
@@ -415,6 +529,12 @@ export default function NewSalePage() {
           </div>
         </div>
       </div>
+
+      {isLoadingSale && (
+        <div className="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-700">
+          {tr.searchLoading}
+        </div>
+      )}
 
       {formError && (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -756,11 +876,13 @@ export default function NewSalePage() {
 
             <button
               type="button"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLoadingSale}
               onClick={handleSubmit}
               className="mt-6 w-full rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-800"
             >
-              {isSubmitting ? tr.submitting : tr.submit}
+              {isSubmitting
+                ? (isEditMode ? tr.updating : tr.submitting)
+                : (isEditMode ? tr.update : tr.submit)}
             </button>
           </div>
         </aside>

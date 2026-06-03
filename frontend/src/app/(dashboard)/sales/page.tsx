@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { Eye, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
@@ -69,7 +70,12 @@ const copy = {
     returns: 'برگشتی',
     items: 'اقلام',
     action: 'رسید',
+    actions: 'عملیات',
     viewReceipt: 'مشاهده',
+    edit: 'ویرایش',
+    delete: 'حذف',
+    deleteConfirm: 'آیا مطمئن هستید که می‌خواهید این فروش را حذف کنید؟ موجودی، بدهی و صندوق اصلاح می‌شود.',
+    deleteFailed: 'حذف فروش موفق نشد.',
     loading: 'در حال بارگذاری فروش ها...',
     empty: 'هنوز هیچ فروشی ثبت نشده است.',
     walkIn: 'مشتری حضوری',
@@ -101,7 +107,12 @@ const copy = {
     returns: 'بېرته ستنونه',
     items: 'توکي',
     action: 'رسید',
+    actions: 'عملیات',
     viewReceipt: 'کتل',
+    edit: 'سمول',
+    delete: 'ړنګول',
+    deleteConfirm: 'ایا ډاډه یاست چې دا پلور ړنګ کړئ؟ ذخیره، پور او صندوق به اصلاح شي.',
+    deleteFailed: 'پلور ړنګ نه شو.',
     loading: 'پلورنې بارېږي...',
     empty: 'تر اوسه هېڅ پلور نه دی ثبت شوی.',
     walkIn: 'حضوري پیرودونکی',
@@ -133,7 +144,12 @@ const copy = {
     returns: 'Returns',
     items: 'Items',
     action: 'Receipt',
+    actions: 'Actions',
     viewReceipt: 'View',
+    edit: 'Edit',
+    delete: 'Delete',
+    deleteConfirm: 'Are you sure you want to delete this sale? Stock, debt, and cash totals will be adjusted.',
+    deleteFailed: 'Failed to delete sale.',
     loading: 'Loading sales...',
     empty: 'No sales have been recorded yet.',
     walkIn: 'Walk-in customer',
@@ -199,6 +215,9 @@ export default function SalesHistoryPage() {
   const [selectedReceipt, setSelectedReceipt] = useState<SaleReceipt | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [loadingReceiptId, setLoadingReceiptId] = useState<string | null>(null);
+  const [deletingSaleId, setDeletingSaleId] = useState<string | null>(null);
+  const canEditSales = user?.role === 'ADMIN' || user?.role === 'PHARMACIST';
+  const canDeleteSales = user?.role === 'ADMIN';
 
   const fetchSales = useCallback(async (filters?: { startDate?: string; endDate?: string }) => {
     setIsLoading(true);
@@ -271,6 +290,32 @@ export default function SalesHistoryPage() {
       }
     } finally {
       setLoadingReceiptId(null);
+    }
+  };
+
+  const deleteSale = async (saleId: string) => {
+    if (!window.confirm(tr.deleteConfirm)) {
+      return;
+    }
+
+    setDeletingSaleId(saleId);
+    setError('');
+
+    try {
+      const response = await api.delete(`/sales/${saleId}`);
+
+      if (response.success) {
+        await fetchSales({
+          startDate: startDate || undefined,
+          endDate: endDate || undefined,
+        });
+      } else {
+        setError(response.message || tr.deleteFailed);
+      }
+    } catch {
+      setError(tr.deleteFailed);
+    } finally {
+      setDeletingSaleId(null);
     }
   };
 
@@ -371,7 +416,7 @@ export default function SalesHistoryPage() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50">
                 <tr>
-                  {[tr.date, tr.prescription, tr.customer, tr.status, tr.total, tr.paid, tr.debt, tr.profit, tr.returns, tr.action].map((heading) => (
+                  {[tr.date, tr.prescription, tr.customer, tr.status, tr.total, tr.paid, tr.debt, tr.profit, tr.returns, tr.actions].map((heading) => (
                     <th
                       key={heading}
                       className="whitespace-nowrap px-4 py-3 text-start font-semibold text-slate-500"
@@ -416,13 +461,50 @@ export default function SalesHistoryPage() {
                       {formatMoney(sale.returnAmount, locale)}
                     </td>
                     <td className="px-4 py-4">
-                      <button
-                        type="button"
-                        onClick={() => openReceipt(sale.id)}
-                        className="rounded-2xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-100"
-                      >
-                        {loadingReceiptId === sale.id ? '...' : tr.viewReceipt}
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => openReceipt(sale.id)}
+                          disabled={loadingReceiptId === sale.id}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-1 disabled:cursor-wait disabled:opacity-70"
+                          title={tr.viewReceipt}
+                          aria-label={tr.viewReceipt}
+                        >
+                          {loadingReceiptId === sale.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                          ) : (
+                            <Eye className="h-4 w-4" aria-hidden="true" />
+                          )}
+                        </button>
+
+                        {canEditSales && (
+                          <Link
+                            href={`/sales/new?edit=${sale.id}`}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-sky-700 shadow-sm transition hover:border-sky-300 hover:bg-sky-100 hover:text-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:ring-offset-1"
+                            title={tr.edit}
+                            aria-label={tr.edit}
+                          >
+                            <Pencil className="h-4 w-4" aria-hidden="true" />
+                          </Link>
+                        )}
+
+                        {canDeleteSales && (
+                          <button
+                            type="button"
+                            onClick={() => deleteSale(sale.id)}
+                            disabled={deletingSaleId === sale.id}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-100 hover:text-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:ring-offset-1 disabled:cursor-wait disabled:opacity-70"
+                            title={tr.delete}
+                            aria-label={tr.delete}
+                          >
+                            {deletingSaleId === sale.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" aria-hidden="true" />
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

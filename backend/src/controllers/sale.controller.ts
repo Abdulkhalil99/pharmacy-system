@@ -92,6 +92,25 @@ export const saleController = {
     }
   },
 
+  update: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = createPrescriptionSchema.parse(req.body);
+      const receipt = await saleService.updatePrescriptionSale(getParamValue(req.params.id), data);
+      sendSuccess(res, receipt, 'Prescription sale updated successfully');
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  delete: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await saleService.delete(getParamValue(req.params.id));
+      sendSuccess(res, result, 'Sale deleted successfully');
+    } catch (err) {
+      next(err);
+    }
+  },
+
   returnMedicine: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = returnMedicineSchema.parse(req.body);

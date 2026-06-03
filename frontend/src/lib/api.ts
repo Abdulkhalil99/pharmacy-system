@@ -24,17 +24,32 @@ async function request<T>(
     ? localStorage.getItem('pharmacy_token')
     : null;
 
-  const res = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options.headers,
+      },
+    });
+  } catch {
+    return {
+      success: false,
+      message: 'API server is unreachable. Please make sure the backend is running.',
+    };
+  }
 
-  const data: ApiResponse<T> = await res.json();
-  return data;
+  try {
+    const data: ApiResponse<T> = await res.json();
+    return data;
+  } catch {
+    return {
+      success: false,
+      message: res.ok ? 'Invalid API response.' : `Request failed with status ${res.status}.`,
+    };
+  }
 }
 
 export const api = {

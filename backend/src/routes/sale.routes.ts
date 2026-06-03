@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { saleController } from '../controllers/sale.controller';
-import { anyRole, authenticate, pharmacistOrAdmin } from '../middleware/auth.middleware';
+import { adminOnly, anyRole, authenticate, pharmacistOrAdmin } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -14,6 +14,8 @@ router.get('/yearly', anyRole, saleController.getYearlySummary);
 router.get('/', anyRole, saleController.getAll);
 router.get('/:id', anyRole, saleController.getById);
 router.post('/prescription', pharmacistOrAdmin, saleController.createPrescription);
+router.put('/:id', pharmacistOrAdmin, saleController.update);
+router.delete('/:id', adminOnly, saleController.delete);
 router.post('/return', pharmacistOrAdmin, saleController.returnMedicine);
 
 export default router;

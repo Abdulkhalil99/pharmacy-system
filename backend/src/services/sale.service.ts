@@ -155,6 +155,74 @@ const getReturnedAmount = (sale: SaleWithRelations): number =>
     0
   );
 
+const getReturnedQuantity = (item: SaleWithRelations['prescription']['items'][number]): number =>
+  item.returnedMeds.reduce((sum, returned) => sum + returned.quantity, 0);
+
+const preparePrescriptionItems = async (
+  tx: Prisma.TransactionClient,
+  items: SaleItemInput[]
+) => {
+  if (items.length === 0) {
+    throw new AppError('At least one medicine item is required', 400);
+  }
+
+  const mergedItems = new Map<string, number>();
+
+  for (const item of items) {
+    if (item.quantity <= 0) {
+      throw new AppError('Quantity must be greater than 0', 400);
+    }
+
+    mergedItems.set(item.medicineId, (mergedItems.get(item.medicineId) ?? 0) + item.quantity);
+  }
+
+  const normalizedItems = Array.from(mergedItems.entries()).map(([medicineId, quantity]) => ({
+    medicineId,
+    quantity,
+  }));
+
+  const medicines = await tx.medicine.findMany({
+    where: {
+      id: {
+        in: normalizedItems.map((item) => item.medicineId),
+      },
+    },
+  });
+
+  if (medicines.length !== normalizedItems.length) {
+    const existingIds = new Set(medicines.map((medicine) => medicine.id));
+    const missingId = normalizedItems.find((item) => !existingIds.has(item.medicineId))?.medicineId;
+    throw new AppError(`Medicine not found: ${missingId ?? 'unknown'}`, 404);
+  }
+
+  const medicineMap = new Map(medicines.map((medicine) => [medicine.id, medicine]));
+
+  return normalizedItems.map((item) => {
+    const medicine = medicineMap.get(item.medicineId);
+
+    if (!medicine) {
+      throw new AppError(`Medicine not found: ${item.medicineId}`, 404);
+    }
+
+    if (medicine.quantity < item.quantity) {
+      throw new AppError(`Insufficient stock for ${medicine.name}`, 400);
+    }
+
+    const unitPrice = medicine.sellPrice;
+    const total = unitPrice * item.quantity;
+    const lineProfit = (medicine.sellPrice - medicine.buyPrice) * item.quantity;
+
+    return {
+      medicineId: medicine.id,
+      medicineName: medicine.name,
+      quantity: item.quantity,
+      unitPrice,
+      total,
+      lineProfit,
+    };
+  });
+};
+
 const buildReceipt = (sale: SaleWithRelations) => {
   const originalTotalAmount = sale.prescription.items.reduce((sum, item) => sum + item.total, 0);
   const totalReturnedAmount = getReturnedAmount(sale);
@@ -315,27 +383,12 @@ const getPeriodRange = (period: SummaryPeriod) => {
 
 export const saleService = {
   async createPrescriptionSale(data: CreatePrescriptionSaleInput) {
-    if (data.items.length === 0) {
-      throw new AppError('At least one medicine item is required', 400);
-    }
-
     const customerId = normalizeOptionalString(data.customerId) ?? undefined;
     const paidAmount = Number(data.paidAmount);
 
     if (Number.isNaN(paidAmount) || paidAmount < 0) {
       throw new AppError('Paid amount must be zero or greater', 400);
     }
-
-    const mergedItems = new Map<string, number>();
-
-    for (const item of data.items) {
-      mergedItems.set(item.medicineId, (mergedItems.get(item.medicineId) ?? 0) + item.quantity);
-    }
-
-    const normalizedItems = Array.from(mergedItems.entries()).map(([medicineId, quantity]) => ({
-      medicineId,
-      quantity,
-    }));
 
     return prisma.$transaction(async (tx) => {
       const customer = customerId
@@ -348,45 +401,7 @@ export const saleService = {
         throw new AppError('Customer not found', 404);
       }
 
-      const medicines = await tx.medicine.findMany({
-        where: {
-          id: {
-            in: normalizedItems.map((item) => item.medicineId),
-          },
-        },
-      });
-
-      if (medicines.length !== normalizedItems.length) {
-        const existingIds = new Set(medicines.map((medicine) => medicine.id));
-        const missingId = normalizedItems.find((item) => !existingIds.has(item.medicineId))?.medicineId;
-        throw new AppError(`Medicine not found: ${missingId ?? 'unknown'}`, 404);
-      }
-
-      const medicineMap = new Map(medicines.map((medicine) => [medicine.id, medicine]));
-      const preparedItems = normalizedItems.map((item) => {
-        const medicine = medicineMap.get(item.medicineId);
-
-        if (!medicine) {
-          throw new AppError(`Medicine not found: ${item.medicineId}`, 404);
-        }
-
-        if (medicine.quantity < item.quantity) {
-          throw new AppError(`Insufficient stock for ${medicine.name}`, 400);
-        }
-
-        const unitPrice = medicine.sellPrice;
-        const total = unitPrice * item.quantity;
-        const lineProfit = (medicine.sellPrice - medicine.buyPrice) * item.quantity;
-
-        return {
-          medicineId: medicine.id,
-          medicineName: medicine.name,
-          quantity: item.quantity,
-          unitPrice,
-          total,
-          lineProfit,
-        };
-      });
+      const preparedItems = await preparePrescriptionItems(tx, data.items);
 
       const totalAmount = preparedItems.reduce((sum, item) => sum + item.total, 0);
 
@@ -519,6 +534,220 @@ export const saleService = {
   async getById(id: string) {
     const sale = await getSaleOrThrow(prisma, id);
     return buildReceipt(sale);
+  },
+
+  async updatePrescriptionSale(id: string, data: CreatePrescriptionSaleInput) {
+    const customerId = normalizeOptionalString(data.customerId) ?? undefined;
+    const paidAmount = Number(data.paidAmount);
+
+    if (Number.isNaN(paidAmount) || paidAmount < 0) {
+      throw new AppError('Paid amount must be zero or greater', 400);
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const sale = await getSaleOrThrow(tx, id);
+      const returnedUnits = sale.prescription.items.reduce(
+        (sum, item) => sum + getReturnedQuantity(item),
+        0
+      );
+
+      if (returnedUnits > 0) {
+        throw new AppError('Sales with returned medicines cannot be edited. Use the return workflow instead.', 400);
+      }
+
+      const oldCustomer = sale.prescription.customer;
+      const oldDebtAmount = sale.prescription.debtAmount;
+
+      for (const item of sale.prescription.items) {
+        await tx.medicine.update({
+          where: { id: item.medicineId },
+          data: {
+            quantity: {
+              increment: item.quantity,
+            },
+          },
+        });
+      }
+
+      const customer = customerId
+        ? await tx.customer.findUnique({
+            where: { id: customerId },
+          })
+        : null;
+
+      if (customerId && !customer) {
+        throw new AppError('Customer not found', 404);
+      }
+
+      const preparedItems = await preparePrescriptionItems(tx, data.items);
+      const totalAmount = preparedItems.reduce((sum, item) => sum + item.total, 0);
+
+      if (paidAmount > totalAmount) {
+        throw new AppError('Paid amount cannot be greater than total amount', 400);
+      }
+
+      const debtAmount = totalAmount - paidAmount;
+
+      if (debtAmount > 0 && !customer) {
+        throw new AppError('A customer is required when the prescription has debt', 400);
+      }
+
+      for (const item of preparedItems) {
+        const result = await tx.medicine.updateMany({
+          where: {
+            id: item.medicineId,
+            quantity: {
+              gte: item.quantity,
+            },
+          },
+          data: {
+            quantity: {
+              decrement: item.quantity,
+            },
+          },
+        });
+
+        if (result.count === 0) {
+          throw new AppError(`Unable to reserve stock for ${item.medicineName}`, 409);
+        }
+      }
+
+      await tx.customerTransaction.deleteMany({
+        where: {
+          prescriptionId: sale.prescriptionId,
+          type: CustomerTransactionType.DEBT,
+        },
+      });
+
+      if (oldCustomer && oldDebtAmount > 0) {
+        await tx.customer.update({
+          where: { id: oldCustomer.id },
+          data: {
+            totalDebt: Math.max(oldCustomer.totalDebt - oldDebtAmount, 0),
+          },
+        });
+      }
+
+      await tx.prescriptionItem.deleteMany({
+        where: { prescriptionId: sale.prescriptionId },
+      });
+
+      await tx.prescription.update({
+        where: { id: sale.prescriptionId },
+        data: {
+          customerId: customer?.id,
+          totalAmount,
+          paidAmount,
+          debtAmount,
+          status: getPrescriptionStatus(paidAmount, debtAmount),
+          items: {
+            create: preparedItems.map((item) => ({
+              medicineId: item.medicineId,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              total: item.total,
+            })),
+          },
+        },
+      });
+
+      if (debtAmount > 0 && customer) {
+        await tx.customerTransaction.create({
+          data: {
+            customerId: customer.id,
+            prescriptionId: sale.prescriptionId,
+            type: CustomerTransactionType.DEBT,
+            amount: debtAmount,
+            note: `Debt adjusted from edited prescription ${sale.prescriptionId}`,
+          },
+        });
+
+        const currentCustomerDebt =
+          oldCustomer?.id === customer.id
+            ? Math.max(customer.totalDebt - oldDebtAmount, 0)
+            : customer.totalDebt;
+
+        await tx.customer.update({
+          where: { id: customer.id },
+          data: {
+            totalDebt: currentCustomerDebt + debtAmount,
+          },
+        });
+      }
+
+      const updatedSale = await tx.sale.update({
+        where: { id },
+        data: {
+          totalAmount,
+          profit: preparedItems.reduce((sum, item) => sum + item.lineProfit, 0),
+        },
+        include: saleInclude,
+      });
+
+      await cashRegisterService.syncRegisterTotalsForDate(updatedSale.date, tx);
+
+      return buildReceipt(updatedSale);
+    });
+  },
+
+  async delete(id: string) {
+    return prisma.$transaction(async (tx) => {
+      const sale = await getSaleOrThrow(tx, id);
+
+      for (const item of sale.prescription.items) {
+        const returnedQuantity = getReturnedQuantity(item);
+        const quantityToRestore = item.quantity - returnedQuantity;
+
+        if (quantityToRestore > 0) {
+          await tx.medicine.update({
+            where: { id: item.medicineId },
+            data: {
+              quantity: {
+                increment: quantityToRestore,
+              },
+            },
+          });
+        }
+      }
+
+      if (sale.prescription.customer && sale.prescription.debtAmount > 0) {
+        await tx.customer.update({
+          where: { id: sale.prescription.customer.id },
+          data: {
+            totalDebt: Math.max(
+              sale.prescription.customer.totalDebt - sale.prescription.debtAmount,
+              0
+            ),
+          },
+        });
+      }
+
+      await tx.returnedMedicine.deleteMany({
+        where: {
+          prescriptionItem: {
+            prescriptionId: sale.prescriptionId,
+          },
+        },
+      });
+      await tx.customerTransaction.deleteMany({
+        where: { prescriptionId: sale.prescriptionId },
+      });
+      await tx.prescriptionItem.deleteMany({
+        where: { prescriptionId: sale.prescriptionId },
+      });
+      await tx.sale.delete({
+        where: { id },
+      });
+      await tx.prescription.delete({
+        where: { id: sale.prescriptionId },
+      });
+
+      await cashRegisterService.syncRegisterTotalsForDate(sale.date, tx);
+
+      return {
+        deletedAt: new Date().toISOString(),
+      };
+    });
   },
 
   async returnMedicine(data: ReturnMedicineInput) {
