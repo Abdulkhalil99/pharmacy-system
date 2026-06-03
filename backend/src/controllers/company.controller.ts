@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
+import { AppError } from '../middleware/error.middleware';
 import { companyService } from '../services/company.service';
 import { sendSuccess } from '../utils/response.helper';
 
@@ -86,8 +87,15 @@ export const companyController = {
 
   recordPurchase: async (req: Request, res: Response, next: NextFunction) => {
     try {
+      if (!req.user?.userId) {
+        throw new AppError('Not authenticated.', 401);
+      }
+
       const data = purchaseSchema.parse(req.body);
-      const result = await companyService.recordPurchase(getParamValue(req.params.id), data);
+      const result = await companyService.recordPurchase(getParamValue(req.params.id), {
+        ...data,
+        userId: req.user.userId,
+      });
       sendSuccess(res, result, 'Purchase recorded successfully', 201);
     } catch (err) {
       next(err);

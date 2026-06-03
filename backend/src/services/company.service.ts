@@ -1,5 +1,6 @@
-import { Prisma, TransactionType } from '@prisma/client';
+import { ExpenseCategory, Prisma, TransactionType } from '@prisma/client';
 import { AppError } from '../middleware/error.middleware';
+import { cashRegisterService } from './cashregister.service';
 import { prisma } from '../utils/prismaClient';
 
 export interface CompanyInput {
@@ -23,6 +24,7 @@ export interface RecordPurchaseInput {
   billNumber?: string;
   note?: string;
   date?: string;
+  userId: string;
   items: PurchaseMedicineInput[];
 }
 
@@ -61,6 +63,25 @@ const buildPurchaseNote = (note: string | undefined, items: PurchaseMedicineInpu
   );
 
   return parts.length > 0 ? parts.join(' | ') : null;
+};
+
+const buildPurchaseExpenseDescription = (
+  companyName: string,
+  billNumber: string | undefined,
+  note: string | undefined,
+  items: PurchaseMedicineInput[]
+): string => {
+  const itemSummary = items
+    .map((item) => `${item.name} x${item.quantity}`)
+    .join(', ');
+  const parts = [
+    `Medicine purchase from ${companyName}`,
+    normalizeOptionalString(billNumber) ? `Bill: ${billNumber?.trim()}` : null,
+    normalizeOptionalString(note),
+    itemSummary ? `Items: ${itemSummary}` : null,
+  ].filter((part): part is string => Boolean(part));
+
+  return parts.join(' | ');
 };
 
 const getCompanyOrThrow = async (
@@ -230,6 +251,21 @@ export const companyService = {
         },
       });
 
+      const expense = await tx.expense.create({
+        data: {
+          userId: data.userId,
+          category: ExpenseCategory.OTHER,
+          amount: totalAmount,
+          description: buildPurchaseExpenseDescription(
+            company.name,
+            data.billNumber,
+            data.note,
+            data.items
+          ),
+          date: purchaseDate,
+        },
+      });
+
       const updatedCompany = await tx.company.update({
         where: { id: companyId },
         data: {
@@ -242,9 +278,12 @@ export const companyService = {
         },
       });
 
+      await cashRegisterService.syncRegisterTotalsForDate(purchaseDate, tx);
+
       return {
         company: updatedCompany,
         transaction,
+        expense,
         medicines: affectedMedicines,
         totalAmount,
       };

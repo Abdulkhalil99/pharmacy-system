@@ -26,6 +26,7 @@ export interface SalaryPaymentRecord {
     id: string;
     fullName: string;
     role: string;
+    salary: number;
     isActive: boolean;
   } | null;
 }
@@ -40,6 +41,7 @@ export interface SalaryListResponse {
     id: string;
     fullName: string;
     role: string;
+    salary: number;
     isActive: boolean;
   }>;
   employeeNames: string[];
@@ -61,6 +63,7 @@ export interface SalarySummaryResponse {
   totalAmount: number;
   count: number;
   byEmployee: Array<{
+    employeeId: string | null;
     employeeName: string;
     totalAmount: number;
     count: number;

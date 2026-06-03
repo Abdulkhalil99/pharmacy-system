@@ -41,6 +41,7 @@ const salaryInclude = Prisma.validator<Prisma.SalaryPaymentDefaultArgs>()({
         id: true,
         fullName: true,
         role: true,
+        salary: true,
         isActive: true,
       },
     },
@@ -123,6 +124,7 @@ const mapSalary = (salary: SalaryWithRelations) => ({
         id: salary.employee.id,
         fullName: salary.employee.fullName,
         role: salary.employee.role,
+        salary: roundCurrency(salary.employee.salary),
         isActive: salary.employee.isActive,
       }
     : null,
@@ -155,6 +157,7 @@ const resolveEmployeeForPayment = async (
       select: {
         id: true,
         fullName: true,
+        salary: true,
         isActive: true,
       },
     });
@@ -166,6 +169,7 @@ const resolveEmployeeForPayment = async (
     return {
       employeeId: employee.id,
       employeeName: employee.fullName,
+      salary: roundCurrency(employee.salary),
     };
   }
 
@@ -178,6 +182,7 @@ const resolveEmployeeForPayment = async (
   return {
     employeeId: null,
     employeeName,
+    salary: null,
   };
 };
 
@@ -213,6 +218,7 @@ export const salaryService = {
           id: true,
           fullName: true,
           role: true,
+          salary: true,
           isActive: true,
         },
       }),
@@ -247,6 +253,37 @@ export const salaryService = {
 
     return prisma.$transaction(async (tx) => {
       const employee = await resolveEmployeeForPayment(tx, data);
+
+      if (employee.employeeId && employee.salary !== null) {
+        const paidForPeriod = await tx.salaryPayment.aggregate({
+          where: {
+            month: data.month,
+            year: data.year,
+            OR: [
+              { employeeId: employee.employeeId },
+              {
+                employeeId: null,
+                employeeName: {
+                  equals: employee.employeeName,
+                  mode: 'insensitive',
+                },
+              },
+            ],
+          },
+          _sum: {
+            amount: true,
+          },
+        });
+        const alreadyPaid = roundCurrency(paidForPeriod._sum.amount ?? 0);
+        const remaining = roundCurrency(employee.salary - alreadyPaid);
+
+        if (amount > remaining) {
+          throw new AppError(
+            `Salary payment is higher than the remaining balance. Remaining salary for ${employee.employeeName} in ${data.month}/${data.year} is ${remaining}.`,
+            400
+          );
+        }
+      }
 
       const salary = await tx.salaryPayment.create({
         data: {

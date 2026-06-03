@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { SalaryApiResponse, SalaryPaymentFormData } from '@/hooks/useSalaries';
+import { SalaryApiResponse, SalaryPaymentFormData, useSalarySummary } from '@/hooks/useSalaries';
 
 type Locale = 'fa' | 'ps' | 'en';
 
@@ -11,6 +11,7 @@ interface SalaryFormProps {
     id: string;
     fullName: string;
     role: string;
+    salary: number;
     isActive: boolean;
   }>;
   initialEmployeeId?: string;
@@ -24,6 +25,10 @@ const copy = {
     subtitle: 'پس از ثبت معاش، یک مصرف با دسته بندی معاش نیز به طور خودکار ساخته می شود.',
     employeeName: 'کارمند',
     amount: 'مبلغ',
+    monthlySalary: 'معاش ماهوار',
+    paid: 'پرداخت شده',
+    remaining: 'باقیمانده',
+    overRemaining: 'مبلغ از باقیمانده معاش این ماه بیشتر است.',
     month: 'ماه',
     year: 'سال',
     note: 'یادداشت',
@@ -37,6 +42,10 @@ const copy = {
     subtitle: 'د معاش له ثبت وروسته د معاش په کټګورۍ کې یو لګښت هم په اوتومات ډول جوړېږي.',
     employeeName: 'کارکوونکی',
     amount: 'مبلغ',
+    monthlySalary: 'میاشتنی معاش',
+    paid: 'ورکړل شوی',
+    remaining: 'پاتې',
+    overRemaining: 'مبلغ د دې میاشتې له پاتې معاش څخه ډېر دی.',
     month: 'میاشت',
     year: 'کال',
     note: 'یادښت',
@@ -50,6 +59,10 @@ const copy = {
     subtitle: 'Saving a salary payment also creates an expense entry in the Salary category.',
     employeeName: 'Employee',
     amount: 'Amount',
+    monthlySalary: 'Monthly Salary',
+    paid: 'Paid',
+    remaining: 'Remaining',
+    overRemaining: 'Amount is higher than the remaining salary for this month.',
     month: 'Month',
     year: 'Year',
     note: 'Note',
@@ -76,10 +89,42 @@ export function SalaryForm({
   const [note, setNote] = useState('');
   const [apiError, setApiError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const selectedEmployee = employees.find((employee) => employee.id === employeeId) ?? null;
+  const selectedMonth = Number(month);
+  const selectedYear = Number(year);
+  const hasValidPeriod =
+    Number.isInteger(selectedMonth) &&
+    selectedMonth >= 1 &&
+    selectedMonth <= 12 &&
+    Number.isInteger(selectedYear) &&
+    selectedYear >= 2000 &&
+    selectedYear <= 2100;
+  const { summary } = useSalarySummary(
+    hasValidPeriod ? { month: selectedMonth, year: selectedYear } : undefined
+  );
+  const paidForSelectedPeriod =
+    hasValidPeriod
+      ? summary?.byEmployee.find((row) => row.employeeId === employeeId)?.totalAmount ?? 0
+      : 0;
+  const remainingForSelectedPeriod = selectedEmployee
+    ? Math.max(selectedEmployee.salary - paidForSelectedPeriod, 0)
+    : null;
+  const amountValue = Number(amount || 0);
+  const isOverRemaining =
+    hasValidPeriod && remainingForSelectedPeriod !== null && amountValue > remainingForSelectedPeriod;
+
+  const formatMoney = (value: number) =>
+    `؋ ${value.toLocaleString(locale === 'en' ? 'en-US' : 'fa-AF')}`;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setApiError('');
+
+    if (isOverRemaining) {
+      setApiError(tr.overRemaining);
+      return;
+    }
+
     setIsSubmitting(true);
 
     const response = await onSubmit({
@@ -140,18 +185,43 @@ export function SalaryForm({
             </select>
           </div>
 
+          {selectedEmployee ? (
+            <div className="grid gap-3 rounded-2xl border border-teal-100 bg-teal-50 p-4 text-sm md:grid-cols-3">
+              <div>
+                <p className="text-xs font-medium text-teal-700">{tr.monthlySalary}</p>
+                <p className="mt-1 font-semibold text-slate-900">{formatMoney(selectedEmployee.salary)}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-teal-700">{tr.paid}</p>
+                <p className="mt-1 font-semibold text-slate-900">{formatMoney(paidForSelectedPeriod)}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-teal-700">{tr.remaining}</p>
+                <p className="mt-1 font-semibold text-slate-900">
+                  {formatMoney(remainingForSelectedPeriod ?? 0)}
+                </p>
+              </div>
+            </div>
+          ) : null}
+
           <div className="grid gap-4 md:grid-cols-3">
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">{tr.amount}</label>
               <input
                 type="number"
                 min={0}
+                max={remainingForSelectedPeriod ?? undefined}
                 step="0.01"
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className={`w-full rounded-xl border px-3 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 ${
+                  isOverRemaining
+                    ? 'border-red-300 bg-red-50 focus:ring-red-500'
+                    : 'border-gray-200 bg-gray-50 focus:ring-teal-500'
+                }`}
                 required
               />
+              {isOverRemaining ? <p className="mt-1 text-xs text-red-600">{tr.overRemaining}</p> : null}
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">{tr.month}</label>
@@ -199,7 +269,7 @@ export function SalaryForm({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isOverRemaining}
               className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:bg-gray-400"
             >
               {isSubmitting ? tr.submitting : tr.submit}

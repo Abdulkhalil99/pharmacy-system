@@ -21,6 +21,7 @@ const copy = {
     salaryHistory: 'تاریخچه معاشات',
     date: 'تاریخ',
     amount: 'مبلغ',
+    remaining: 'باقیمانده',
     note: 'یادداشت',
     recordedBy: 'ثبت کننده',
     loading: 'در حال بارگذاری معاشات...',
@@ -39,6 +40,7 @@ const copy = {
     salaryHistory: 'د معاشاتو تاریخچه',
     date: 'نېټه',
     amount: 'مبلغ',
+    remaining: 'پاتې',
     note: 'یادښت',
     recordedBy: 'ثبتوونکی',
     loading: 'معاشات بارېږي...',
@@ -57,6 +59,7 @@ const copy = {
     salaryHistory: 'Salary History',
     date: 'Date',
     amount: 'Amount',
+    remaining: 'Remaining',
     note: 'Note',
     recordedBy: 'Recorded By',
     loading: 'Loading salaries...',
@@ -104,6 +107,24 @@ export default function SalariesPage() {
 
   const formatDate = (value: string) =>
     new Date(value).toLocaleDateString(locale === 'en' ? 'en-US' : 'fa-AF');
+
+  const getRemainingSalary = (salaryId: string) => {
+    const salary = salaries.find((payment) => payment.id === salaryId);
+
+    if (!salary?.employee) {
+      return null;
+    }
+
+    const employeeKey = salary.employeeId ?? salary.employeeName.toLowerCase();
+    const paidForPeriod = salaries
+      .filter((payment) => {
+        const paymentKey = payment.employeeId ?? payment.employeeName.toLowerCase();
+        return paymentKey === employeeKey && payment.month === salary.month && payment.year === salary.year;
+      })
+      .reduce((sum, payment) => sum + payment.amount, 0);
+
+    return Math.max(salary.employee.salary - paidForPeriod, 0);
+  };
 
   return (
     <div className="space-y-6" dir={dir}>
@@ -189,7 +210,7 @@ export default function SalariesPage() {
             <table className="min-w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  {[tr.date, tr.employeeName, tr.month, tr.year, tr.note, tr.recordedBy, tr.amount].map((heading) => (
+                  {[tr.date, tr.employeeName, tr.month, tr.year, tr.note, tr.recordedBy, tr.amount, tr.remaining].map((heading) => (
                     <th
                       key={heading}
                       className="whitespace-nowrap px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-gray-500"
@@ -200,23 +221,30 @@ export default function SalariesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {salaries.map((salary) => (
-                  <tr key={salary.id}>
-                    <td className="whitespace-nowrap px-4 py-3 text-gray-700">{formatDate(salary.date)}</td>
-                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-gray-900">{salary.employeeName}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-gray-600">
-                      {salary.month.toLocaleString(locale === 'en' ? 'en-US' : 'fa-AF')}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-gray-600">
-                      {salary.year.toLocaleString(locale === 'en' ? 'en-US' : 'fa-AF')}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{salary.note ?? '—'}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-gray-600">{salary.user.name}</td>
-                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-indigo-700">
-                      {formatMoney(salary.amount)}
-                    </td>
-                  </tr>
-                ))}
+                {salaries.map((salary) => {
+                  const remainingSalary = getRemainingSalary(salary.id);
+
+                  return (
+                    <tr key={salary.id}>
+                      <td className="whitespace-nowrap px-4 py-3 text-gray-700">{formatDate(salary.date)}</td>
+                      <td className="whitespace-nowrap px-4 py-3 font-semibold text-gray-900">{salary.employeeName}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-gray-600">
+                        {salary.month.toLocaleString(locale === 'en' ? 'en-US' : 'fa-AF')}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-gray-600">
+                        {salary.year.toLocaleString(locale === 'en' ? 'en-US' : 'fa-AF')}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">{salary.note ?? '—'}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-gray-600">{salary.user.name}</td>
+                      <td className="whitespace-nowrap px-4 py-3 font-semibold text-indigo-700">
+                        {formatMoney(salary.amount)}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 font-semibold text-teal-700">
+                        {remainingSalary === null ? '—' : formatMoney(remainingSalary)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
