@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Minus, Package, Plus, Trash2 } from 'lucide-react';
 import { startTransition, useDeferredValue, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
@@ -20,6 +21,13 @@ interface CustomerOption {
 
 interface SelectedMedicine extends MedicineSearchResult {
   quantitySelected: number;
+}
+
+interface SaleDraft {
+  items: SelectedMedicine[];
+  paidAmountInput: string;
+  medicineQuery: string;
+  customer: CustomerOption | null;
 }
 
 const copy = {
@@ -56,6 +64,7 @@ const copy = {
     remainingDebt: 'بدهی باقی مانده',
     payInFull: 'پرداخت کامل',
     debtWarning: 'برای فروش قرضی باید یک مشتری انتخاب شود.',
+    registerCustomer: 'ثبت مشتری',
     summary: 'خلاصه نسخه',
     itemsCount: 'تعداد اقلام',
     estimatedProfit: 'سود تخمینی',
@@ -74,6 +83,7 @@ const copy = {
     searchLoading: 'در حال جستجو...',
     loadFailed: 'بارگذاری فروش موفق نشد.',
     updateFailed: 'ذخیره تغییرات موفق نشد.',
+    draftRestored: 'نسخه قبلی شما بازیابی شد. مشتری جدید انتخاب شده است.',
   },
   ps: {
     back: 'د پلور تاریخچه',
@@ -108,6 +118,7 @@ const copy = {
     remainingDebt: 'پاتې پور',
     payInFull: 'بشپړ تادیه',
     debtWarning: 'د پور پلور لپاره باید یو پیرودونکی وټاکل شي.',
+    registerCustomer: 'پیرودونکی ثبت کړئ',
     summary: 'د نسخې لنډیز',
     itemsCount: 'د توکو شمېر',
     estimatedProfit: 'اټکلي ګټه',
@@ -126,6 +137,7 @@ const copy = {
     searchLoading: 'لټون روان دی...',
     loadFailed: 'پلور بار نه شو.',
     updateFailed: 'بدلونونه خوندي نه شول.',
+    draftRestored: 'ستاسو پخوانۍ نسخه بېرته راوستل شوه. نوی پیرودونکی ټاکل شوی دی.',
   },
   en: {
     back: 'Sales History',
@@ -160,6 +172,7 @@ const copy = {
     remainingDebt: 'Remaining Debt',
     payInFull: 'Pay in Full',
     debtWarning: 'Select a customer if any amount will remain on debt.',
+    registerCustomer: 'Register Customer',
     summary: 'Prescription Summary',
     itemsCount: 'Items Count',
     estimatedProfit: 'Estimated Profit',
@@ -178,8 +191,12 @@ const copy = {
     searchLoading: 'Searching...',
     loadFailed: 'Failed to load sale.',
     updateFailed: 'Failed to save changes.',
+    draftRestored: 'Your sale draft was restored with the new customer selected.',
   },
 };
+
+const SALE_DRAFT_KEY = 'pharmacy:new-sale-draft';
+const SALE_DRAFT_CUSTOMER_KEY = 'pharmacy:new-sale-draft-customer';
 
 function getLocale(language?: string): Locale {
   if (language === 'en' || language === 'ps') {
@@ -226,27 +243,63 @@ function getCustomerLabel(customer: CustomerOption) {
 
 export default function NewSalePage() {
   const { user } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const editSaleId = searchParams.get('edit');
+  const shouldRestoreDraft = searchParams.get('restoreSaleDraft') === '1';
   const isEditMode = Boolean(editSaleId);
   const locale = getLocale(user?.language);
   const tr = copy[locale];
   const dir = locale === 'en' ? 'ltr' : 'rtl';
 
-  const [medicineQuery, setMedicineQuery] = useState('');
+  const [restoredDraft] = useState<SaleDraft | null>(() => {
+    if (isEditMode || !shouldRestoreDraft || typeof window === 'undefined') {
+      return null;
+    }
+
+    const savedDraft = window.sessionStorage.getItem(SALE_DRAFT_KEY);
+    const savedCustomer = window.sessionStorage.getItem(SALE_DRAFT_CUSTOMER_KEY);
+
+    if (!savedDraft) {
+      return null;
+    }
+
+    try {
+      const draft = JSON.parse(savedDraft) as Partial<SaleDraft>;
+      const customer = savedCustomer ? (JSON.parse(savedCustomer) as CustomerOption) : null;
+
+      return {
+        items: Array.isArray(draft.items) ? draft.items : [],
+        paidAmountInput: draft.paidAmountInput ?? '0',
+        medicineQuery: draft.medicineQuery ?? '',
+        customer,
+      };
+    } catch {
+      return null;
+    }
+  });
+
+  const [medicineQuery, setMedicineQuery] = useState(restoredDraft?.medicineQuery ?? '');
   const [showMedicineResults, setShowMedicineResults] = useState(false);
   const { medicines, isLoading: medicinesLoading } = useMedicineSearch(medicineQuery);
 
-  const [items, setItems] = useState<SelectedMedicine[]>([]);
-  const [customerQuery, setCustomerQuery] = useState('');
+  const [items, setItems] = useState<SelectedMedicine[]>(restoredDraft?.items ?? []);
+  const [customerQuery, setCustomerQuery] = useState(
+    restoredDraft?.customer ? getCustomerLabel(restoredDraft.customer) : ''
+  );
   const [showCustomerResults, setShowCustomerResults] = useState(false);
   const deferredCustomerQuery = useDeferredValue(customerQuery.trim());
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [customerLoadingState, setCustomerLoadingState] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerOption | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerOption | null>(
+    restoredDraft?.customer ?? null
+  );
 
-  const [paidAmountInput, setPaidAmountInput] = useState('0');
+  const [paidAmountInput, setPaidAmountInput] = useState(restoredDraft?.paidAmountInput ?? '0');
   const [formError, setFormError] = useState('');
+  const [formNotice, setFormNotice] = useState(
+    restoredDraft?.customer ? tr.draftRestored : ''
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [receipt, setReceipt] = useState<SaleReceipt | null>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -261,6 +314,16 @@ export default function NewSalePage() {
   const paidAmount = Number.isNaN(parsedPaidAmount) ? 0 : Math.max(parsedPaidAmount, 0);
   const remainingDebt = Math.max(totalAmount - paidAmount, 0);
   const statusBadge = getStatusBadge(totalAmount, paidAmount, locale);
+
+  useEffect(() => {
+    if (!shouldRestoreDraft) {
+      return;
+    }
+
+    window.sessionStorage.removeItem(SALE_DRAFT_KEY);
+    window.sessionStorage.removeItem(SALE_DRAFT_CUSTOMER_KEY);
+    router.replace('/sales/new');
+  }, [router, shouldRestoreDraft]);
 
   useEffect(() => {
     if (!deferredCustomerQuery) {
@@ -310,6 +373,13 @@ export default function NewSalePage() {
       window.clearTimeout(timeoutId);
     };
   }, [deferredCustomerQuery]);
+
+  const clearCustomer = () => {
+    setSelectedCustomer(null);
+    setCustomerQuery('');
+    setCustomers([]);
+    setShowCustomerResults(false);
+  };
 
   useEffect(() => {
     if (!editSaleId) {
@@ -399,6 +469,7 @@ export default function NewSalePage() {
     }
 
     setFormError('');
+    setFormNotice('');
     setItems((currentItems) => {
       const existingItem = currentItems.find((item) => item.id === medicine.id);
 
@@ -440,11 +511,17 @@ export default function NewSalePage() {
     setItems((currentItems) => currentItems.filter((item) => item.id !== medicineId));
   };
 
-  const clearCustomer = () => {
-    setSelectedCustomer(null);
-    setCustomerQuery('');
-    setCustomers([]);
-    setShowCustomerResults(false);
+  const saveDraftAndRegisterCustomer = () => {
+    window.sessionStorage.setItem(
+      SALE_DRAFT_KEY,
+      JSON.stringify({
+        items,
+        paidAmountInput,
+        medicineQuery,
+      })
+    );
+
+    router.push('/customers?fromSaleDraft=1');
   };
 
   const handleSubmit = async () => {
@@ -464,6 +541,7 @@ export default function NewSalePage() {
     }
 
     setFormError('');
+    setFormNotice('');
     setIsSubmitting(true);
 
     try {
@@ -542,6 +620,12 @@ export default function NewSalePage() {
         </div>
       )}
 
+      {formNotice && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {formNotice}
+        </div>
+      )}
+
       <div className="grid gap-6 xl:grid-cols-[1.6fr_0.95fr]">
         <section className="space-y-6">
           <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
@@ -615,15 +699,31 @@ export default function NewSalePage() {
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-5 py-4">
-              <h2 className="text-xl font-bold text-slate-900">{tr.selectedItems}</h2>
+          <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/70 px-5 py-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">{tr.selectedItems}</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  {items.length} {tr.itemsCount}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-2 text-end">
+                <p className="text-xs font-semibold text-emerald-700">{tr.totalAmount}</p>
+                <p className="mt-1 text-lg font-black text-emerald-800">
+                  {formatMoney(totalAmount, locale)}
+                </p>
+              </div>
             </div>
 
             {items.length === 0 ? (
-              <div className="px-5 py-12 text-center text-sm text-slate-500">{tr.noItems}</div>
+              <div className="flex flex-col items-center justify-center px-5 py-14 text-center text-sm text-slate-500">
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                  <Package className="h-6 w-6" aria-hidden="true" />
+                </div>
+                {tr.noItems}
+              </div>
             ) : (
-              <div className="space-y-4 px-5 py-5">
+              <div className="divide-y divide-slate-100">
                 {items.map((item) => {
                   const subtotal = item.sellPrice * item.quantitySelected;
                   const lineProfit = (item.sellPrice - item.buyPrice) * item.quantitySelected;
@@ -631,32 +731,38 @@ export default function NewSalePage() {
                   return (
                     <div
                       key={item.id}
-                      className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[minmax(0,1.7fr)_140px_140px_140px_auto]"
+                      className="grid gap-4 px-5 py-4 transition-colors hover:bg-slate-50 lg:grid-cols-[minmax(220px,1fr)_170px_115px_130px_44px] lg:items-center"
                     >
-                      <div className="min-w-0">
-                        <p className="truncate text-base font-bold text-slate-900">{item.name}</p>
-                        <p className="mt-1 text-sm text-slate-500">{tr.company}: {item.company}</p>
-                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                          <span className="rounded-full bg-white px-2.5 py-1 text-slate-600">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
+                          <Package className="h-5 w-5" aria-hidden="true" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-base font-bold text-slate-900">{item.name}</p>
+                          <p className="mt-1 text-sm text-slate-500">{tr.company}: {item.company}</p>
+                          <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                            <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
                             {tr.stock}: {item.quantity}
-                          </span>
-                          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
-                            {tr.profitEstimate}: {formatMoney(lineProfit, locale)}
-                          </span>
+                            </span>
+                            <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-700">
+                              {tr.profitEstimate}: {formatMoney(lineProfit, locale)}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        <p className="text-xs font-semibold uppercase text-slate-400">
                           {tr.quantity}
                         </p>
-                        <div className="mt-2 flex items-center gap-2">
+                        <div className="mt-2 grid h-11 grid-cols-[40px_minmax(58px,1fr)_40px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                           <button
                             type="button"
                             onClick={() => updateItemQuantity(item.id, item.quantitySelected - 1)}
-                            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-lg font-bold text-slate-700"
+                            className="flex items-center justify-center text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                            aria-label="-"
                           >
-                            -
+                            <Minus className="h-4 w-4" aria-hidden="true" />
                           </button>
                           <input
                             type="number"
@@ -664,43 +770,46 @@ export default function NewSalePage() {
                             max={item.quantity}
                             value={item.quantitySelected}
                             onChange={(event) => updateItemQuantity(item.id, Number(event.target.value))}
-                            className="h-10 w-16 rounded-2xl border border-slate-200 bg-white text-center text-sm font-semibold text-slate-900 outline-none focus:border-emerald-400"
+                            className="min-w-0 border-x border-slate-200 bg-white text-center text-sm font-bold text-slate-900 outline-none focus:bg-emerald-50"
                           />
                           <button
                             type="button"
                             onClick={() => updateItemQuantity(item.id, item.quantitySelected + 1)}
-                            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-lg font-bold text-slate-700"
+                            className="flex items-center justify-center text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                            aria-label="+"
                           >
-                            +
+                            <Plus className="h-4 w-4" aria-hidden="true" />
                           </button>
                         </div>
                       </div>
 
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      <div className="rounded-2xl bg-slate-50 px-3 py-2 lg:bg-transparent lg:px-0 lg:py-0">
+                        <p className="text-xs font-semibold uppercase text-slate-400">
                           {tr.price}
                         </p>
-                        <p className="mt-3 text-base font-bold text-slate-900">
+                        <p className="mt-1 text-base font-bold text-slate-900">
                           {formatMoney(item.sellPrice, locale)}
                         </p>
                       </div>
 
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      <div className="rounded-2xl bg-emerald-50 px-3 py-2 lg:bg-transparent lg:px-0 lg:py-0">
+                        <p className="text-xs font-semibold uppercase text-slate-400">
                           {tr.subtotal}
                         </p>
-                        <p className="mt-3 text-base font-bold text-emerald-700">
+                        <p className="mt-1 text-base font-black text-emerald-700">
                           {formatMoney(subtotal, locale)}
                         </p>
                       </div>
 
-                      <div className="flex items-start justify-end">
+                      <div className="flex items-center justify-end">
                         <button
                           type="button"
                           onClick={() => removeItem(item.id)}
-                          className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-100"
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-700 transition-colors hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:ring-offset-1"
+                          title={tr.remove}
+                          aria-label={tr.remove}
                         >
-                          {tr.remove}
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
                         </button>
                       </div>
                     </div>
@@ -847,7 +956,14 @@ export default function NewSalePage() {
 
             {remainingDebt > 0 && !selectedCustomer && (
               <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                {tr.debtWarning}
+                <p>{tr.debtWarning}</p>
+                <button
+                  type="button"
+                  onClick={saveDraftAndRegisterCustomer}
+                  className="mt-3 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-amber-700"
+                >
+                  {tr.registerCustomer}
+                </button>
               </div>
             )}
           </div>

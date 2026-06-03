@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useDeferredValue, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -13,6 +14,8 @@ import {
 import { CustomerForm } from './components/CustomerForm';
 
 type Locale = 'fa' | 'ps' | 'en';
+
+const SALE_DRAFT_CUSTOMER_KEY = 'pharmacy:new-sale-draft-customer';
 
 const copy = {
   fa: {
@@ -104,6 +107,9 @@ const filterOptions: CustomerFilter[] = ['ALL', 'WITH_DEBT', 'NO_DEBT'];
 
 export default function CustomersPage() {
   const { user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const isFromSaleDraft = searchParams.get('fromSaleDraft') === '1';
   const locale = getLocale(user?.language);
   const tr = copy[locale];
   const dir = locale === 'en' ? 'ltr' : 'rtl';
@@ -116,7 +122,7 @@ export default function CustomersPage() {
     filter,
   });
 
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(isFromSaleDraft);
   const [editingCustomer, setEditingCustomer] = useState<CustomerListItem | null>(null);
 
   const totalReceivable = customers.reduce((sum, customer) => sum + customer.totalDebt, 0);
@@ -145,6 +151,14 @@ export default function CustomersPage() {
   const openEditForm = (customer: CustomerListItem) => {
     setEditingCustomer(customer);
     setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+
+    if (isFromSaleDraft) {
+      router.push('/sales/new?restoreSaleDraft=1');
+    }
   };
 
   return (
@@ -300,7 +314,7 @@ export default function CustomersPage() {
         <CustomerForm
           locale={locale}
           customer={editingCustomer}
-          onClose={() => setShowForm(false)}
+          onClose={closeForm}
           onSubmit={async (data) => {
             const response = editingCustomer
               ? await updateCustomer(editingCustomer.id, data)
@@ -308,6 +322,20 @@ export default function CustomersPage() {
 
             if (response.success) {
               await refresh();
+
+              if (isFromSaleDraft && !editingCustomer && response.data) {
+                window.sessionStorage.setItem(
+                  SALE_DRAFT_CUSTOMER_KEY,
+                  JSON.stringify({
+                    id: response.data.id,
+                    name: response.data.name,
+                    phone: response.data.phone,
+                    totalDebt: response.data.totalDebt,
+                    createdAt: response.data.createdAt,
+                  })
+                );
+                router.push('/sales/new?restoreSaleDraft=1');
+              }
             }
 
             return response;
