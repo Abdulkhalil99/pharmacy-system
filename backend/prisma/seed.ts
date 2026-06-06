@@ -91,7 +91,8 @@ async function main() {
       phone: '+93700000012',
       email: 'cashier1@pharmacy.local',
       createdById: admin.id,
-      
+      // 
+      // this is for test
     },
     create: {
       name: 'فرید صندوقدار',
