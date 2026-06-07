@@ -3,6 +3,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Language, PrismaClient, Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { Pool } from 'pg';
+// kafsdjfsdjfsa
 
 const connectionString = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
 const connectionLabel = process.env.DIRECT_URL ? 'DIRECT_URL' : 'DATABASE_URL';
