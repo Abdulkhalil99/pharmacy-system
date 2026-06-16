@@ -6,6 +6,15 @@ import { Pool } from 'pg';
 // kafsdjfsdjfsa
 // ldsaffsf
 
+
+
+
+
+
+
+
+// afskjfdsjfsjf
+
 const connectionString = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
 const connectionLabel = process.env.DIRECT_URL ? 'DIRECT_URL' : 'DATABASE_URL';
 
