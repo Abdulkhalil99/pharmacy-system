@@ -192,7 +192,7 @@ export function Sidebar() {
     );
   };
 
-  const SidebarContent = () => (
+  const sidebarContent = (
     <div
       className="flex h-full flex-col bg-[radial-gradient(circle_at_top,#134e4a,transparent_32%),linear-gradient(180deg,#0f3f39_0%,#062a26_100%)]"
       dir={dir}
@@ -308,14 +308,14 @@ export function Sidebar() {
       {mobileOpen ? (
         <div className="fixed inset-0 z-50 bg-slate-950/60 lg:hidden" onClick={() => setMobileOpen(false)}>
           <aside className="h-full w-72 max-w-[85vw]" onClick={(event) => event.stopPropagation()}>
-            <SidebarContent />
+            {sidebarContent}
           </aside>
         </div>
       ) : null}
 
       <aside className={`hidden lg:block ${collapsed ? 'w-24' : 'w-72'} transition-all duration-200`}>
         <div className="sticky top-0 h-screen">
-          <SidebarContent />
+          {sidebarContent}
         </div>
       </aside>
     </>

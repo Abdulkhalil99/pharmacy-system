@@ -31,7 +31,9 @@ export function proxy(req: NextRequest) {
 
   if (!token) {
     const loginUrl = new URL('/login', req.url);
-    loginUrl.searchParams.set('from', pathname);
+    if (pathname !== '/') {
+      loginUrl.searchParams.set('from', pathname);
+    }
     return attachLocaleCookie(req, NextResponse.redirect(loginUrl));
   }
 
@@ -39,6 +41,6 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  // Run proxy on all routes except Next.js internals and static files
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.png$).*)'],
+  // Run proxy on app routes, not Next.js internals or static assets.
+  matcher: ['/((?!_next|favicon.ico|.*\\..*).*)'],
 };

@@ -41,7 +41,7 @@ function SalesTooltip({
   payload,
   label,
   locale,
-}: TooltipContentProps<TooltipValueType, string> & {
+}: TooltipContentProps<TooltipValueType, string | number> & {
   locale: Locale;
 }) {
   if (!active || !payload?.length) {
@@ -144,7 +144,7 @@ export function SalesChart({
               />
               <Tooltip
                 cursor={{ stroke: '#0f766e', strokeOpacity: 0.18, strokeWidth: 1 }}
-                content={(props: TooltipContentProps<TooltipValueType, string>) => (
+                content={(props: TooltipContentProps<TooltipValueType, string | number>) => (
                   <SalesTooltip {...props} locale={locale} />
                 )}
               />
