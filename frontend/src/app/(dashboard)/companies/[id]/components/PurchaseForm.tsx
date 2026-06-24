@@ -8,6 +8,7 @@ import {
   PurchaseFormData,
   PurchaseMedicineItemInput,
 } from '@/hooks/useCompanies';
+import { DRUG_KIND_LABELS, DRUG_KINDS, DrugKind } from '@pharmacy/shared';
 
 interface Props {
   companyName: string;
@@ -28,6 +29,7 @@ const copy = {
     existingMedicine: 'انتخاب دوا از موجودی',
     newMedicine: 'دوا جدید',
     name: 'نام دوا',
+    kind: 'نوع دوا',
     barcode: 'بارکد',
     quantity: 'تعداد',
     buyPrice: 'قیمت خرید',
@@ -53,6 +55,7 @@ const copy = {
     existingMedicine: 'له موجوده ذخیرې درمل وټاکئ',
     newMedicine: 'نوی درمل',
     name: 'د درمل نوم',
+    kind: 'د درمل ډول',
     barcode: 'بارکوډ',
     quantity: 'شمېر',
     buyPrice: 'د پېرود بیه',
@@ -78,6 +81,7 @@ const copy = {
     existingMedicine: 'Select Existing Medicine',
     newMedicine: 'New Medicine',
     name: 'Medicine Name',
+    kind: 'Medicine Kind',
     barcode: 'Barcode',
     quantity: 'Quantity',
     buyPrice: 'Buy Price',
@@ -96,6 +100,7 @@ const copy = {
 
 const createEmptyItem = (): PurchaseMedicineItemInput => ({
   name: '',
+  kind: 'TABLET',
   barcode: '',
   quantity: 1,
   buyPrice: 0,
@@ -167,6 +172,7 @@ export function PurchaseForm({ companyName, locale, onSubmit, onClose }: Props) 
     updateItem(index, {
       medicineId: option.id,
       name: option.name,
+      kind: option.kind,
       barcode: option.barcode ?? '',
       buyPrice: option.buyPrice,
       sellPrice: option.sellPrice,
@@ -195,6 +201,7 @@ export function PurchaseForm({ companyName, locale, onSubmit, onClose }: Props) 
       items: items.map((item) => ({
         medicineId: item.medicineId,
         name: item.name.trim(),
+        kind: item.kind,
         barcode: item.barcode?.trim() || undefined,
         quantity: Number(item.quantity),
         buyPrice: Number(item.buyPrice),
@@ -341,7 +348,22 @@ export function PurchaseForm({ companyName, locale, onSubmit, onClose }: Props) 
                   </div>
                 </div>
 
-                <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <div className="mt-4 grid gap-4 md:grid-cols-4">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">{tr.kind}</label>
+                    <select
+                      value={item.kind}
+                      onChange={(e) => updateItem(index, { kind: e.target.value as DrugKind })}
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      required
+                    >
+                      {DRUG_KINDS.map((kind) => (
+                        <option key={kind} value={kind}>
+                          {DRUG_KIND_LABELS[kind][locale]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-gray-700">{tr.barcode}</label>
                     <input

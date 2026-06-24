@@ -53,6 +53,24 @@ enum ExpenseCategory {
   OTHER
 }
 
+enum DrugKind {
+  SYRUP
+  TABLET
+  CAPSULE
+  INJECTION
+  DROPS
+  CREAM
+  OINTMENT
+  GEL
+  POWDER
+  SPRAY
+  LOTION
+  SUPPOSITORY
+  SUSPENSION
+  SOLUTION
+  INHALER
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // GROUP 1: PEOPLE
 // ══════════════════════════════════════════════════════════════════════════════
@@ -132,6 +150,7 @@ model Customer {
 model Medicine {
   id          String   @id @default(cuid())
   name        String
+  kind        DrugKind @default(TABLET)
   barcode     String?  @unique          // For barcode scanner support
   company     String                    // Manufacturer name (just a string, not FK)
   buyPrice    Float                     // What we paid per unit (in AFN)

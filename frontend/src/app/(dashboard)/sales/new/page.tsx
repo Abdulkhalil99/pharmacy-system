@@ -411,6 +411,7 @@ export default function NewSalePage() {
             return {
               id: item.medicineId,
               name: item.medicineName,
+              kind: medicine?.kind ?? 'TABLET',
               barcode: item.barcode,
               company: item.company,
               buyPrice: item.unitPrice - item.unitProfit,

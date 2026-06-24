@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Medicine, MedicineFormData, MedicineStatus, useMedicines } from '@/hooks/useMedicines';
 import { LowStockAlert } from './components/LowStockAlert';
 import { MedicineForm } from './components/MedicineForm';
+import { DRUG_KIND_LABELS } from '@pharmacy/shared';
 
 type Locale = 'fa' | 'ps' | 'en';
 
@@ -18,6 +19,7 @@ const copy = {
     expiring: 'در حال انقضا',
     expired: 'منقضی شده',
     name: 'نام',
+    kind: 'نوع',
     barcode: 'بارکد',
     company: 'شرکت',
     buyPrice: 'قیمت خرید',
@@ -50,6 +52,7 @@ const copy = {
     expiring: 'پای ته رسیدونکي',
     expired: 'پای شوي',
     name: 'نوم',
+    kind: 'ډول',
     barcode: 'بارکوډ',
     company: 'شرکت',
     buyPrice: 'د پېرود بیه',
@@ -82,6 +85,7 @@ const copy = {
     expiring: 'Expiring Soon',
     expired: 'Expired',
     name: 'Name',
+    kind: 'Kind',
     barcode: 'Barcode',
     company: 'Company',
     buyPrice: 'Buy Price',
@@ -320,7 +324,7 @@ export default function MedicinesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
-                  {[tr.name, tr.barcode, tr.company, tr.buyPrice, tr.sellPrice, tr.quantity, tr.expiry, tr.status, tr.actions].map((heading) => (
+                  {[tr.name, tr.kind, tr.barcode, tr.company, tr.buyPrice, tr.sellPrice, tr.quantity, tr.expiry, tr.status, tr.actions].map((heading) => (
                     <th
                       key={heading}
                       className="whitespace-nowrap px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-gray-500"
@@ -345,6 +349,9 @@ export default function MedicinesPage() {
                   return (
                     <tr key={medicine.id} className={`transition-colors ${rowColor[medicineStatus]}`}>
                       <td className="whitespace-nowrap px-4 py-3 font-medium text-gray-900">{medicine.name}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-gray-600">
+                        {DRUG_KIND_LABELS[medicine.kind]?.[locale] ?? medicine.kind}
+                      </td>
                       <td className="px-4 py-3 font-mono text-xs text-gray-500">{medicine.barcode ?? '—'}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-gray-600">{medicine.company}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-gray-600">

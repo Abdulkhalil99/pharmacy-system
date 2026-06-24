@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { InputHTMLAttributes } from 'react';
 import { Medicine, MedicineFormData } from '@/hooks/useMedicines';
 import { ApiResponse } from '@/lib/api';
+import { DRUG_KIND_LABELS, DRUG_KINDS, DrugKind } from '@pharmacy/shared';
 
 interface Props {
   medicine?: Medicine | null;
@@ -17,6 +18,7 @@ const labels = {
     add: 'افزودن دوا',
     edit: 'ویرایش دوا',
     name: 'نام دوا',
+    kind: 'نوع دوا',
     barcode: 'بارکد',
     company: 'شرکت سازنده',
     buyPrice: 'قیمت خرید (افغانی)',
@@ -32,6 +34,7 @@ const labels = {
     add: 'درمل زیاتول',
     edit: 'درمل سمول',
     name: 'د درمل نوم',
+    kind: 'د درمل ډول',
     barcode: 'بارکد',
     company: 'جوړوونکې شرکت',
     buyPrice: 'د پیرود قیمت (افغانی)',
@@ -47,6 +50,7 @@ const labels = {
     add: 'Add Medicine',
     edit: 'Edit Medicine',
     name: 'Medicine Name',
+    kind: 'Medicine Kind',
     barcode: 'Barcode',
     company: 'Company',
     buyPrice: 'Buy Price (AFN)',
@@ -67,6 +71,7 @@ export function MedicineForm({ medicine, onSubmit, onClose, locale = 'fa' }: Pro
 
   const [form, setForm] = useState({
     name: '',
+    kind: 'TABLET' as DrugKind,
     barcode: '',
     company: '',
     buyPrice: '',
@@ -83,6 +88,7 @@ export function MedicineForm({ medicine, onSubmit, onClose, locale = 'fa' }: Pro
     if (medicine) {
       setForm({
         name: medicine.name,
+        kind: medicine.kind,
         barcode: medicine.barcode ?? '',
         company: medicine.company,
         buyPrice: String(medicine.buyPrice),
@@ -96,6 +102,7 @@ export function MedicineForm({ medicine, onSubmit, onClose, locale = 'fa' }: Pro
 
     setForm({
       name: '',
+      kind: 'TABLET',
       barcode: '',
       company: '',
       buyPrice: '',
@@ -114,6 +121,7 @@ export function MedicineForm({ medicine, onSubmit, onClose, locale = 'fa' }: Pro
     const nextErrors: Record<string, string> = {};
 
     if (!form.name.trim()) nextErrors.name = 'Required';
+    if (!form.kind) nextErrors.kind = 'Required';
     if (!form.company.trim()) nextErrors.company = 'Required';
     if (!form.buyPrice || Number.isNaN(Number(form.buyPrice))) nextErrors.buyPrice = 'Invalid';
     if (!form.sellPrice || Number.isNaN(Number(form.sellPrice))) nextErrors.sellPrice = 'Invalid';
@@ -137,6 +145,7 @@ export function MedicineForm({ medicine, onSubmit, onClose, locale = 'fa' }: Pro
 
     const payload: MedicineFormData = {
       name: form.name.trim(),
+      kind: form.kind,
       barcode: form.barcode.trim() || undefined,
       company: form.company.trim(),
       buyPrice: Number(form.buyPrice),
@@ -200,6 +209,26 @@ export function MedicineForm({ medicine, onSubmit, onClose, locale = 'fa' }: Pro
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {field('name', tr.name)}
             <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">{tr.kind}</label>
+              <select
+                value={form.kind}
+                onChange={(e) => setForm((prev) => ({ ...prev, kind: e.target.value as DrugKind }))}
+                className={`w-full rounded-xl border px-3 py-2.5 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                  errors.kind ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50'
+                }`}
+              >
+                {DRUG_KINDS.map((kind) => (
+                  <option key={kind} value={kind}>
+                    {DRUG_KIND_LABELS[kind][locale]}
+                  </option>
+                ))}
+              </select>
+              {errors.kind && <p className="mt-1 text-xs text-red-500">{errors.kind}</p>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">{tr.barcode}</label>
               <div className="relative">
                 <input
@@ -217,9 +246,8 @@ export function MedicineForm({ medicine, onSubmit, onClose, locale = 'fa' }: Pro
                 </span>
               </div>
             </div>
+            {field('company', tr.company)}
           </div>
-
-          {field('company', tr.company)}
 
           <div className="grid grid-cols-2 gap-4">
             {field('buyPrice', tr.buyPrice, 'number', { min: 0, step: '0.01' })}

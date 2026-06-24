@@ -2,10 +2,12 @@
 
 import { startTransition, useDeferredValue, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import type { DrugKind } from '@pharmacy/shared';
 
 export interface MedicineSearchResult {
   id: string;
   name: string;
+  kind: DrugKind;
   barcode: string | null;
   company: string;
   buyPrice: number;

@@ -12,6 +12,7 @@ export interface CompanyInput {
 export interface PurchaseMedicineInput {
   medicineId?: string;
   name: string;
+  kind?: Prisma.MedicineCreateInput['kind'];
   barcode?: string;
   quantity: number;
   buyPrice: number;
@@ -208,6 +209,7 @@ export const companyService = {
             where: { id: medicine.id },
             data: {
               name: item.name.trim(),
+              kind: item.kind ?? medicine.kind,
               barcode: normalizeOptionalString(item.barcode) ?? medicine.barcode,
               company: company.name,
               buyPrice: item.buyPrice,
@@ -227,6 +229,7 @@ export const companyService = {
         const createdMedicine = await tx.medicine.create({
           data: {
             name: item.name.trim(),
+            kind: item.kind ?? 'TABLET',
             barcode: normalizeOptionalString(item.barcode),
             company: company.name,
             buyPrice: item.buyPrice,

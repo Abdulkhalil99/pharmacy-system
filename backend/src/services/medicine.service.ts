@@ -2,6 +2,24 @@ import { prisma } from '../utils/prismaClient';
 import { AppError } from '../middleware/error.middleware';
 import { Prisma } from '@prisma/client';
 
+const drugKinds = [
+  'SYRUP',
+  'TABLET',
+  'CAPSULE',
+  'INJECTION',
+  'DROPS',
+  'CREAM',
+  'OINTMENT',
+  'GEL',
+  'POWDER',
+  'SPRAY',
+  'LOTION',
+  'SUPPOSITORY',
+  'SUSPENSION',
+  'SOLUTION',
+  'INHALER',
+] as const;
+
 export interface MedicineFilters {
   search?: string;
   status?: 'all' | 'low_stock' | 'expiring_soon' | 'expired';
@@ -11,6 +29,7 @@ export interface MedicineFilters {
 
 export interface CreateMedicineDto {
   name: string;
+  kind?: Prisma.MedicineCreateInput['kind'];
   barcode?: string;
   company: string;
   buyPrice: number;
@@ -30,10 +49,13 @@ export const medicineService = {
     const where: Prisma.MedicineWhereInput = {};
 
     if (search) {
+      const normalizedSearch = search.trim().toUpperCase();
+      const kindMatch = drugKinds.find((kind) => kind === normalizedSearch);
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { barcode: { contains: search, mode: 'insensitive' } },
         { company: { contains: search, mode: 'insensitive' } },
+        ...(kindMatch ? [{ kind: kindMatch }] : []),
       ];
     }
 

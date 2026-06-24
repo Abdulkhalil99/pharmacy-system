@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import type { DrugKind } from '@pharmacy/shared';
 
 export interface Medicine {
   id: string;
   name: string;
+  kind: DrugKind;
   barcode: string | null;
   company: string;
   buyPrice: number;
@@ -41,6 +43,7 @@ export interface MedicineSummary {
 
 export interface MedicineFormData {
   name: string;
+  kind: DrugKind;
   barcode?: string;
   company: string;
   buyPrice: number;

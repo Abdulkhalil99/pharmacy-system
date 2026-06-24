@@ -232,6 +232,7 @@ async function main() {
     data: [
       {
         name: 'Amoxicillin 500mg',
+        kind: 'CAPSULE',
         barcode: '6001010000001',
         company: 'GlaxoSmithKline',
         buyPrice: 15,
@@ -242,6 +243,7 @@ async function main() {
       },
       {
         name: 'Paracetamol 500mg',
+        kind: 'TABLET',
         barcode: '6001010000002',
         company: 'Afghan Pharma',
         buyPrice: 5,
@@ -252,6 +254,7 @@ async function main() {
       },
       {
         name: 'Metformin 850mg',
+        kind: 'TABLET',
         barcode: '6001010000003',
         company: 'Sina Pharma',
         buyPrice: 20,
@@ -262,6 +265,7 @@ async function main() {
       },
       {
         name: 'Omeprazole 20mg',
+        kind: 'CAPSULE',
         barcode: '6001010000004',
         company: 'Novartis',
         buyPrice: 18,
@@ -272,6 +276,7 @@ async function main() {
       },
       {
         name: 'Vitamin C 1000mg',
+        kind: 'TABLET',
         barcode: '6001010000005',
         company: 'Afghan Pharma',
         buyPrice: 8,

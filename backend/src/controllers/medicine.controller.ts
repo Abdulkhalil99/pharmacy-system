@@ -5,6 +5,23 @@ import { sendSuccess, sendPaginated } from '../utils/response.helper';
 
 const medicineSchema = z.object({
   name: z.string().min(1, 'Name is required'),
+  kind: z.enum([
+    'SYRUP',
+    'TABLET',
+    'CAPSULE',
+    'INJECTION',
+    'DROPS',
+    'CREAM',
+    'OINTMENT',
+    'GEL',
+    'POWDER',
+    'SPRAY',
+    'LOTION',
+    'SUPPOSITORY',
+    'SUSPENSION',
+    'SOLUTION',
+    'INHALER',
+  ]).optional(),
   barcode: z.string().optional(),
   company: z.string().min(1, 'Company is required'),
   buyPrice: z.coerce.number().positive('Buy price must be positive'),
